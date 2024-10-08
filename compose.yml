@@ -1,0 +1,22 @@
+name: pdnet
+services:
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    env_file:
+      - frontend/.env
+    ports:
+      - "3000:80"
+
+  llm-backend:
+    build: 
+      context: llm
+      dockerfile: Dockerfile
+    container_name: llm-backend
+    env_file:
+      - llm/.env
+    ports:
+      - "5000:5000"
