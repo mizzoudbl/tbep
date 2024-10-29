@@ -1,5 +1,20 @@
-name: pdnet
+name: tbep
 services:
+  neo4j:
+    image: neo4j:5.20-enterprise
+    container_name: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      # - NEO4J_dbms_memory_transaction_total_max=1024m
+      # Volumnes to be used need to be customized accordingly, this is just for myself
+    volumes:
+      - ../data:/var/lib/neo4j/import/
+      - ../neo4j/data:/var/lib/neo4j/data
+      - ./plugins:/var/lib/neo4j/plugins
 
   frontend:
     build:
@@ -20,3 +35,17 @@ services:
       - llm/.env
     ports:
       - "5000:5000"
+  
+  nestjs:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    container_name: nestjs
+    # Change this if running on local to avoid restarting on failure
+    restart: on-failure
+    ports:
+      - "4000:4000"
+    depends_on:
+      - neo4j
+    env_file:
+      - backend/.env

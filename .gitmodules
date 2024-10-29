@@ -1,6 +1,9 @@
 [submodule "frontend"]
 	path = frontend
-	url = https://github.com/bhupesh98/drug-target-frontend.git
+	url = https://github.com/bhupesh98/tbep-frontend.git
 [submodule "llm"]
 	path = llm
 	url = https://github.com/bhupesh98/llm-backend.git
+[submodule "backend"]
+	path = backend
+	url = https://github.com/bhupesh98/tbep-backend.git
