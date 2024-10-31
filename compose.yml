@@ -26,13 +26,11 @@ services:
     ports:
       - "3000:80"
 
-  llm-backend:
+  gsea:
     build: 
-      context: llm
+      context: gsea
       dockerfile: Dockerfile
-    container_name: llm-backend
-    env_file:
-      - llm/.env
+    container_name: gsea
     ports:
       - "5000:5000"
   
