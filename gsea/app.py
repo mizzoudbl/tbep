@@ -188,7 +188,7 @@ def process_kegg_pathways(gene_list: list[str], total_genes=20000):
                     "Adjusted P-value": None,  # Placeholder for now
                     "Odds Ratio": format(odds_ratio, ".2f"),
                     "Combined Score": format(combined_score, ".2f"),
-                    "Genes": ";".join(overlap_genes),
+                    "Genes": ",".join(overlap_genes),
                 }
             )
 

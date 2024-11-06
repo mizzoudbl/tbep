@@ -45,5 +45,14 @@ services:
       - "4000:4000"
     depends_on:
       - neo4j
+      - redis
     env_file:
       - backend/.env
+  
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-cache:/data
