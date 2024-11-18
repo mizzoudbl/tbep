@@ -2,3 +2,7 @@
 !.env.example
 .vscode
 .idea
+node_modules/
+scripts/*.csv
+scripts/*.cypher
+*.dump

@@ -10,6 +10,7 @@ services:
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_dbms_memory_transaction_total_max=0
+      - NEO4J_dbms_security_procedures_unrestricted=gds*
       # Volumnes to be used need to be customized accordingly, this is just for myself
     volumes:
       - ../data:/var/lib/neo4j/import/
