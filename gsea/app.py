@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import math
@@ -11,7 +11,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://pdnet.saipuram.com", "http://localhost:3000"],
-    allow_methods=["GET"],
+    allow_methods=["POST","GET"],
     allow_headers=["*"],
 )
 
@@ -182,7 +182,7 @@ def process_kegg_pathways(gene_list: list[str], total_genes=20000):
             p_values.append(p_value)
             result.append(
                 {
-                    "Gene_set": gene_set,
+                    "Term": gene_set,
                     "Overlap": f"{overlap_count}/{pathway_size}",
                     "P-value": p_value,
                     "Adjusted P-value": None,  # Placeholder for now
@@ -201,9 +201,11 @@ def process_kegg_pathways(gene_list: list[str], total_genes=20000):
     return result
 
 
-@app.get("/gsea")
+@app.post("/gsea")
 async def gsea(
-    gene_list: str = Query(..., description="Comma-separated list of genes")
+    gene_list: list[str] = Body(
+        ..., title="Gene List", description="Comma-separated list of genes"
+    )
 ):
     """
     Perform Gene Set Enrichment Analysis (GSEA) using KEGG pathways
@@ -219,11 +221,14 @@ async def gsea(
         List of dictionaries containing the results
     """
 
-    genes = gene_list.split(",")
-    result = process_kegg_pathways(genes)
+    result = process_kegg_pathways(gene_list)
     return result
 
+@app.get("/")
+def hello_world():
+    return "Welcome to TBEP Python API!"
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=5000)
