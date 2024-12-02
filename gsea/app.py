@@ -4,8 +4,13 @@ import pandas as pd
 import math
 from scipy.stats import hypergeom
 
-KEGG_FILE_PATH = "KEGG_2021_Human.csv"
-df = pd.read_csv(KEGG_FILE_PATH)
+KEGG_FILE_PATH = "pathway_kegg_gsea.csv"
+REACTONE_FILE_PATH = "pathway_reactome_gsea.csv"
+
+df_kegg = pd.read_csv(KEGG_FILE_PATH).dropna()
+df_reactome = pd.read_csv(REACTONE_FILE_PATH).dropna()
+
+df = pd.concat([df_kegg, df_reactome], ignore_index=True)
 
 app = FastAPI()
 app.add_middleware(
@@ -141,9 +146,9 @@ def benjamini_hochberg_correction(p_values: list[float]) -> list[float]:
     return adjusted_p_values
 
 
-def process_kegg_pathways(gene_list: list[str], total_genes=20000):
+def process_pathways(gene_list: list[str], total_genes=20000):
     """
-    Process KEGG pathways and return the results
+    Process pathways and return the results
 
     Parameters
     ----------
@@ -166,7 +171,7 @@ def process_kegg_pathways(gene_list: list[str], total_genes=20000):
 
         gene_set = row.iloc[0]
 
-        pathway_genes = row[1:].dropna().astype(str).tolist()
+        pathway_genes = str(row[1]).split(" ")
 
         overlap_genes = check_overlap(gene_list, pathway_genes)
 
@@ -182,7 +187,7 @@ def process_kegg_pathways(gene_list: list[str], total_genes=20000):
             p_values.append(p_value)
             result.append(
                 {
-                    "Term": gene_set,
+                    "Pathway": gene_set,
                     "Overlap": f"{overlap_count}/{pathway_size}",
                     "P-value": p_value,
                     "Adjusted P-value": None,  # Placeholder for now
@@ -208,7 +213,7 @@ async def gsea(
     )
 ):
     """
-    Perform Gene Set Enrichment Analysis (GSEA) using KEGG pathways
+    Perform Gene Set Enrichment Analysis (GSEA) using pathways
 
     Parameters
     ----------
@@ -221,7 +226,7 @@ async def gsea(
         List of dictionaries containing the results
     """
 
-    result = process_kegg_pathways(gene_list)
+    result = process_pathways(gene_list)
     return result
 
 @app.get("/")

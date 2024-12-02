@@ -55,18 +55,23 @@ const argv = yargs(process.argv.slice(2))
     description: "Headers to forcefully include",
     type: "array",
   })
+  .option("no-header", {
+    description: "Disable headers",
+    type: "boolean",
+    default: false,
+  })
   .help()
   .alias("help", "h")
   .version("1.0.0")
   .alias("version", "v")
   .usage(
     chalk.green(
-      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease>"
+      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease> [-H | --header] <headers>",
     )
   )
   .example(
     chalk.blue(
-      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS"
+      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS --no-header"
     ),
     chalk.cyan("Load data in Neo4j"),
   ).argv;
@@ -136,7 +141,7 @@ async function promptForDetails(answer) {
 }
 
 (async () => {
-  let { file, dbUrl, username, password, database, disease, header } = await argv;
+  let { file, dbUrl, username, password, database, disease, header, "no-header": noHeader } = await argv;
 
   if (!file || !dbUrl || !username || !password || !database || !disease || !header) {
     try {
@@ -147,7 +152,7 @@ async function promptForDetails(answer) {
         password,
         database,
         disease,
-        header,
+        ...(noHeader && { header: [] }),
       });
       file = answers.file;
       dbUrl = answers.dbUrl;
