@@ -6,7 +6,13 @@
   "scripts": {
     "gss": "node gene-score-seed.js",
     "gus": "node gene-universal-seed.js",
-    "gud": "node gene-universal-deletion.js"
+    "gud": "node gene-universal-deletion.js",
+    "guf": "node gene-universal-filter.js",
+    "grv": "node gene-reference-verify.js",
+    "opp": "node ot-pre-processor.js",
+    "gos": "node gene-opentargets-seed.js",
+    "rgu": "node reference-genome-update.js",
+    "dms": "node disease-mapping-seed.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +21,7 @@
     "chalk": "^5.3.0",
     "inquirer": "^12.1.0",
     "neo4j-driver": "^5.26.0",
+    "papaparse": "^5.4.1",
     "yargs": "^17.7.2"
   }
 }

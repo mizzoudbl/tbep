@@ -34,17 +34,12 @@ const argv = yargs(process.argv.slice(2))
 		description: "Specify the database name",
 		type: "string",
 	})
-	.option("interactionType", {
-		alias: "i",
-		description: "Specify the interaction type",
-		type: "string",
-	})
 	.help()
 	.alias("help", "h")
 	.version("1.0.0")
 	.alias("version", "v")
-	.usage(chalk.green("Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-i | --interactionType] <interactionType>"))
-	.example(chalk.blue("node $0 -f data.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -i PPI"))
+	.usage(chalk.green("Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database>"))
+	.example(chalk.blue("node $0 -f data.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep"))
 	.example(chalk.cyan("Load data in Neo4j")).argv;
 
 async function promptForDetails(answer) {
@@ -87,12 +82,6 @@ async function promptForDetails(answer) {
 			default: defaultDatabase,
 			required: true,
 		},
-		!answer.interactionType && {
-			type: "input",
-			name: "interactionType",
-			message: "Enter the interaction type [Make sure it's just one word]:",
-			required: true,
-		},
 	].filter(Boolean);
 
 	return inquirer.prompt(questions);
@@ -105,17 +94,15 @@ async function promptForDetails(answer) {
 		username,
 		password,
 		database,
-		interactionType,
 	} = await argv;
 	console.warn(chalk.bold("[WARN]"), "Make sure to not enter header names in CSV file");
-	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("'1st ENSG Gene ID,2nd ENSG Gene ID,Score' should be the format of CSV file"));
+	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("'diseaseID,disease name' should be the format of CSV file"));
 	if (
 		!file ||
 		!dbUrl ||
 		!username ||
 		!password ||
-		!database ||
-		!interactionType
+		!database
 	) {
 		try {
 			const answers = await promptForDetails({
@@ -124,14 +111,12 @@ async function promptForDetails(answer) {
 				username,
 				password,
 				database,
-				interactionType,
 			});
 			file ||= answers.file;
 			dbUrl ||= answers.dbUrl;
 			username ||= answers.username;
 			password ||= answers.password;
 			database ||= answers.database;
-			interactionType ||= answers.interactionType;
 		} catch (error) {
 			console.info(chalk.blue.bold("[INFO]"), chalk.cyan("Exiting..."));
 			process.exit(0);
@@ -148,33 +133,34 @@ async function promptForDetails(answer) {
 	});
 
 	try {
-		await session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (g:Gene) REQUIRE g.ID IS UNIQUE");
+		await session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (d:Disease) REQUIRE d.ID IS UNIQUE");
 
-		console.log(chalk.green(chalk.bold("[LOG]"), "Created uniqueness constraint on Gene ID"));
+		console.log(chalk.green(chalk.bold("[LOG]"), "Created uniqueness constraint on Disease ID"));
 		console.log(chalk.green(chalk.bold("[LOG]"), "This process will take some time. Please wait..."));
 
 		const query = `
 		LOAD CSV FROM '${/^https?:\/\//.test(file) ? file : `file:///${file.replace(/^\.[\\/]+/,"")}`}' AS line
 		CALL {
 			WITH line
-			MERGE (g1:Gene {ID: line[0]})
-			MERGE (g2:Gene {ID: line[1]})
-			MERGE (g1)-[r:${interactionType}]->(g2)
-			ON CREATE SET r.score = toFloat(line[2])
+			MERGE (g1:Disease {ID: line[0]})
+			ON CREATE SET g1.name = toLower(line[1])
 		} IN TRANSACTIONS;
 		`;
 		// record execution time
 		const start = new Date().getTime();
 		const result = await session.run(query);
-		await session.run("CREATE TEXT INDEX ID_Gene IF NOT EXISTS FOR (g:Gene) ON (g.ID);");
 		const end = new Date().getTime();
 
 		console.log(chalk.green(chalk.bold("[LOG]"), "Data loaded using LOAD CSV"));
 		console.log(chalk.green(chalk.bold("[LOG]"), `Nodes Created: ${result.summary.counters.updates().nodesCreated}`));
-		console.log(chalk.green(chalk.bold("[LOG]"), `Relationship Created: ${result.summary.counters.updates().relationshipsCreated}`));
+		console.log(chalk.green(chalk.bold("[LOG]"), "Creating FULLTEXT INDEX on Disease ID and Disease name property"));
+		
+		await session.run("CREATE TEXT INDEX IF NOT EXISTS ID_Disease FOR (d:Disease) ON (d.ID)");
+		await session.run("CREATE TEXT INDEX IF NOT EXISTS name_Disease FOR (d:Disease) ON (d.name)");
 
 		console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
 	} catch (error) {
+		console.error(chalk.bold("[ERROR]"), "Check if file path is correct and file is accessible");
 		console.error(chalk.bold("[ERROR]"), "Error connecting to database. \nMake sure database is active and database URL/credentials are valid");
 		console.debug(chalk.bold("[DEBUG]"), error);
 	} finally {

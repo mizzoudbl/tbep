@@ -17,6 +17,9 @@ importers:
       neo4j-driver:
         specifier: ^5.26.0
         version: 5.26.0
+      papaparse:
+        specifier: ^5.4.1
+        version: 5.4.1
       yargs:
         specifier: ^17.7.2
         version: 17.7.2
@@ -194,6 +197,9 @@ packages:
   os-tmpdir@1.0.2:
     resolution: {integrity: sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g==}
     engines: {node: '>=0.10.0'}
+
+  papaparse@5.4.1:
+    resolution: {integrity: sha512-HipMsgJkZu8br23pW15uvo6sib6wne/4woLZPlFf3rpDyMe9ywEXUsuD7+6K9PRkJlVT51j/sCOYDKGGS3ZJrw==}
 
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
@@ -460,6 +466,8 @@ snapshots:
       rxjs: 7.8.1
 
   os-tmpdir@1.0.2: {}
+
+  papaparse@5.4.1: {}
 
   require-directory@2.1.1: {}
 

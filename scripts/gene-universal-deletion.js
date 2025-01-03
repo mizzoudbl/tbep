@@ -6,8 +6,8 @@ import neo4j from "neo4j-driver";
 const defaultUsername = "neo4j";
 const defaultDatabase = "tbep";
 const defaultDbUrl = "bolt://localhost:7687";
-const DISEASE_DEPENDENT_FIELDS = ['GDA', 'Genetics', 'DEG'];
-const DISEASE_INDEPENDENT_FIELDS = ['Pathway', 'Druggability', 'TE', 'Database'];
+const DISEASE_DEPENDENT_FIELDS = ['OpenTargets', 'DEG'];
+const DISEASE_INDEPENDENT_FIELDS = ['Pathway', 'Druggability', 'TE', 'OT_Prioritization'];
 
 const args = yargs(process.argv.slice(2))
     .option("dbUrl", {
@@ -39,7 +39,8 @@ const args = yargs(process.argv.slice(2))
         alias: "di",
         description: "Specify whether data is disease independent",
         type: "boolean",
-    }).option("type", {
+    })
+    .option("type", {
         alias: "t",
         description: "Specify the type of data to delete",
         type: "string",
@@ -49,13 +50,19 @@ const args = yargs(process.argv.slice(2))
         description: "Headers to explicitly delete",
         type: "array",
     })
+    .option("noHeader", {
+        alias: "nh",
+        description: "Disable headers",
+        type: "boolean",
+        default: false,
+    })
     .help()
     .alias("help", "h")
     .version("1.0.0")
     .alias("version", "v")
-    .usage(chalk.green("Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease> [-t | --type] <type> [-di | --diseaseIndependent]"))
-    .example(chalk.blue("node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -t TE -di"))
-    .example(chalk.blue("node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS -t GWAS"))
+    .usage(chalk.green("Usage: $0 [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease> [-t | --type] <type> [-di | --diseaseIndependent]"))
+    .example(chalk.blue("node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -t TE --di --nh"))
+    .example(chalk.blue("node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS -t GWAS -H p-value,OR"))
     .example(chalk.cyan("Load data in Neo4j")).argv;
 
 async function promptForDetails(answer) {
@@ -93,11 +100,11 @@ async function promptForDetails(answer) {
             name: "disease",
             message: "Enter the disease name (Press Enter if disease independent):",
         },
-        !answer.type && {
+        !answer.type && !answer.diseaseIndependent && {
             type: "list",
             name: "type",
             message: "Enter the type of data to delete:",
-            choices: DISEASE_DEPENDENT_FIELDS.concat(DISEASE_INDEPENDENT_FIELDS),
+            choices: DISEASE_DEPENDENT_FIELDS.concat(DISEASE_INDEPENDENT_FIELDS).concat('Custom'),
             required: true,
         },
         !answer.header && {
@@ -106,33 +113,36 @@ async function promptForDetails(answer) {
             message: "Enter the headers to forcefully delete: (comma separated)",
             filter: (input) => input.split(",").map((header) => header.trim()),
         },
-    ];
+    ].filter(Boolean);
 
-    const answers = await inquirer.prompt(questions.filter(Boolean));
-    return {
-        ...answer,
-        ...answers,
-    };
+    return inquirer.prompt(questions);
 }
 
-(async function deleteData() {
-    let { dbUrl, username, password, database, disease, diseaseIndependent, type, header } = await args;
-	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("GWAS -> Genetics"));
+(async () => {
+    let { dbUrl, username, password, database, disease, diseaseIndependent, type, header, noHeader } = await args;
+	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("GWAS -> OpenTargets"));
+	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("Genetics -> OpenTargets"));
     console.info(chalk.blue.bold("[INFO]"), chalk.cyan("LogFC -> DEG"));
-    if (!dbUrl || !username || !password || !database || !disease || !diseaseIndependent || !type || !header) {
+    console.info(chalk.blue.bold("[INFO]"), chalk.cyan("GDA -> OpenTargets"));
+    
+    if (!dbUrl || !username || !password || !database || !disease || !type || !header) {
         try {
-            const answers = await promptForDetails({ dbUrl, username, password, database, disease, type, header });
-            dbUrl = answers.dbUrl;
-            username = answers.username;
-            password = answers.password;
-            database = answers.database;
-            disease = answers.disease.toUpperCase();
-            type = answers.type;
-            header = answers.header;
+            const answers = await promptForDetails({ dbUrl, username, password, database, disease, type, ...(noHeader && { header: [] }), diseaseIndependent });
+            dbUrl ||= answers.dbUrl;
+            username ||= answers.username;
+            password ||= answers.password;
+            database ||= answers.database;
+            disease ||= answers.disease?.toUpperCase();
+            type ||= answers.type;
+            header ||= answers.header || [];
         } catch (error) {
             console.info(chalk.blue.bold("[INFO]"), chalk.cyan("Exiting..."));
             process.exit(0);
         }
+    }
+    if (header.length > 0 && header[0] !== "") {
+        console.log(chalk.green(chalk.bold("[LOG]"), "Headers:"));
+        console.log(header);
     }
 
     disease = DISEASE_INDEPENDENT_FIELDS.includes(type) ? undefined : disease.toUpperCase();
@@ -149,7 +159,7 @@ async function promptForDetails(answer) {
         'CALL apoc.create.removeProperties(g,keys + $header) YIELD node FINISH',
         { batchSize:1000, parallel:true, params: { keys: keys, header: $header } })
         YIELD committedOperations
-        RETURN keys, committedOperations;
+        RETURN keys + $header AS keys, committedOperations;
         `;
         console.log(chalk.green(chalk.bold("[LOG]"), "This will take a while..."));
         const start = new Date().getTime();
@@ -157,24 +167,15 @@ async function promptForDetails(answer) {
         const end = new Date().getTime();
 
         console.log(chalk.green(chalk.bold("[LOG]"), `Successfully deleted ${type} data for ${disease || "disease independent"} data`));
-        console.log(chalk.green(chalk.bold("[LOG]"), `Properties deleted: \n${result.records[0].get("keys").join("\n ")}`));
+        console.log(chalk.green(chalk.bold("[LOG]"), `Properties deleted: \n${result.records[0].get("keys").map(k => `- ${k}`).join("\n ")}`));
         console.log(chalk.green(chalk.bold("[LOG]"), `Committed operations: ${result.records[0].get("committedOperations")}`));
         console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
 
         const deleteQuery = `
         MATCH (s:Stats { version: 1 })
-        SET s.${disease || 'common'} = [k IN s.${disease || 'common'} WHERE NOT k STARTS WITH '${column}']
-        RETURN s.${disease || 'common'} AS keys;
+        SET s.${disease || 'common'} = [k IN s.${disease || 'common'} WHERE NOT k STARTS WITH '${column}' AND NOT k IN $header];
         `;
-        const keys = (await session.run(deleteQuery)).records[0].get("keys");
-        if (disease && !keys.some(key => key.startsWith(`${disease}_`))) {
-            const deleteDiseaseQuery = `
-            MATCH (s:Stats { version: 1 })
-            SET s.disease = [d IN s.disease WHERE d <> $disease]
-            REMOVE s.${disease};
-            `;
-            await session.run(deleteDiseaseQuery, { disease });
-        }
+        await session.run(deleteQuery, { header });
         console.log(chalk.green(chalk.bold("[LOG]"), `Successfully updated stats for ${disease || "disease independent"} data`));
     } catch (error) {
         console.error(chalk.red(chalk.bold("[ERROR]"), `Error deleting ${type} data`), error);
