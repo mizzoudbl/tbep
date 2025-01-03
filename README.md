@@ -136,11 +136,19 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     cp frontend/.env.example frontend/.env
     ```
 
-3. Download the video files from the following link and place them inside the `frontend/public/video/` folder.
+3. Download the video files if available and place them inside the `frontend/public/video/` folder.
 
     **NOTE:** This is not the most conventional & intuitive place to keep the videos, but this was hard-coded in the frontend code, so directed to keep the videos in this folder. This will soon be changed and once done will be updated in the manual. Also, this workflow will be gradually improved to avoid these steps, but currently the video size exceeds 100MB limit of commit size, so this is the workaround.
 
-4. Docker compose up the database and seed the data. Keep the database dump inside the [scripts](scripts) folder.
+4. Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for production.**
+
+    ```bash
+    cd frontend
+    pnpm install # or npm install
+    pnpm build # or npm run build
+    ```
+
+5. Before starting up the services, match tag of image used in `frontend` service according to domain .Now, docker compose up the services and seed the data in neo4j database container. Keep the database dump inside the [scripts](scripts) folder.
 
     > 💡 **NOTE**
     > In case, the server doesn't have the dump data. Transfer the files using the following command:
@@ -151,6 +159,9 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     > ```
 
     ```bash
+    # For development, use
+    # docker compose up -d --build --profile dev
+    # For production, use
     docker compose up -d --build
     docker exec -it neo4j neo4j-admin database load --from-path=/var/lib/neo4j/import/ tbep
     # Change the username (default username is neo4j) and password
@@ -166,7 +177,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     > docker exec -it neo4j neo4j-admin database dump tbep --to-path=/var/lib/neo4j/import/backups
     > ```
 
-5. Once, data is seeded successfully and database is online. Restart the neo4j service.
+6. Once, data is seeded successfully and database is online. Restart the neo4j service.
 
 ```bash
 docker compose restart neo4j

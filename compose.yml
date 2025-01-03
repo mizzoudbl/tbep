@@ -17,13 +17,20 @@ services:
       - ../neo4j/data:/var/lib/neo4j/data
       - ./plugins:/var/lib/neo4j/plugins
 
-  frontend:
+  frontend-dev:
     build:
       context: frontend
       dockerfile: Dockerfile
     container_name: frontend
     env_file:
       - frontend/.env
+    ports:
+      - "3000:80"
+    profiles: ["dev"]
+
+  frontend:
+    image: bhupesh42/tbep-frontend:pdnet-missouri-edu
+    container_name: frontend
     ports:
       - "3000:80"
 
