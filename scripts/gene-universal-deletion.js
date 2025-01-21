@@ -98,7 +98,7 @@ async function promptForDetails(answer) {
         !answer.disease && {
             type: "input",
             name: "disease",
-            message: "Enter the disease name (Press Enter if disease independent):",
+            message: "Enter the disease ID (Press Enter if disease independent):",
         },
         !answer.type && !answer.diseaseIndependent && {
             type: "list",
@@ -173,8 +173,8 @@ async function promptForDetails(answer) {
 
         const deleteQuery = `
         MATCH (s:Stats { version: 1 })
-        SET s.${disease || 'common'} = [k IN s.${disease || 'common'} WHERE NOT k STARTS WITH '${column}' AND NOT k IN $header];
-        `;
+        SET s.${disease || 'common'} = [k IN s.${disease || 'common'} WHERE NOT k STARTS WITH '${column}' AND NOT k IN $header]
+        WITH s WHERE size(s.${disease || 'common'}) = 0 REMOVE s.${disease || 'common'} ${disease ? `MATCH (d:Disease { ID: $disease }) DELETE d` : ''}`;
         await session.run(deleteQuery, { header });
         console.log(chalk.green(chalk.bold("[LOG]"), `Successfully updated stats for ${disease || "disease independent"} data`));
     } catch (error) {

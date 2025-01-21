@@ -269,8 +269,7 @@ async function promptForDetails(answer) {
       await session.run("CREATE TEXT INDEX Gene_name_Gene IF NOT EXISTS FOR (g:Gene) ON (g.Gene_name);");
 
       const diseaseAndHeadersUpdateQuery = `
-      MERGE (s:Stats { version: 1 }) SET
-      s.common = apoc.coll.toSet(COALESCE(s.common, []) + ${disease ? '[h IN $headers WHERE NOT h STARTS WITH $disease + "_" ]' : '$headers'})
+      MERGE (s:Stats { version: 1 }) SET s.common = apoc.coll.toSet(COALESCE(s.common, []) + ${disease ? '[h IN $headers WHERE NOT h STARTS WITH $disease + "_" ]' : '$headers'})
       ${disease ? `, s.${disease} = apoc.coll.toSet(COALESCE(s.${disease}, []) + [h IN $headers WHERE h STARTS WITH $disease + "_" ])` : ''};`;
       
       await session.run(diseaseAndHeadersUpdateQuery, { ...(disease && { disease }), headers });
