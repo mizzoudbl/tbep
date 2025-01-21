@@ -21,6 +21,10 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
+      args:
+        BASIC_AUTH_USERNAME: ${BASIC_AUTH_USERNAME}
+        BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD}
+    image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
     env_file:
       - frontend/.env
@@ -29,7 +33,7 @@ services:
     profiles: ["dev"]
 
   frontend:
-    image: bhupesh42/tbep-frontend:pdnet-missouri-edu
+    image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
     ports:
       - "3000:80"
