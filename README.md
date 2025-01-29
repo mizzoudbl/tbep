@@ -136,11 +136,12 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     cp frontend/.env.example frontend/.env
     ```
 
-3. Download the video files if available and place them inside the `frontend/public/video/` folder.
+> 💡 **NOTE**
+> If you are developing this application, then only steps 3 and 4 are required. For production, you can pull the relevant docker images and skip the steps 3 & 4. 
 
-    **NOTE:** This is not the most conventional & intuitive place to keep the videos, but this was hard-coded in the frontend code, so directed to keep the videos in this folder. This will soon be changed and once done will be updated in the manual. Also, this workflow will be gradually improved to avoid these steps, but currently the video size exceeds 100MB limit of commit size, so this is the workaround.
+3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](/frontend/public/video/) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1LvPTY8Z559shYoWTaSOHFuWOFKGG8QHv) and place them inside the mentioned folder.
 
-4. Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for production.**
+4. *[Only for Developers]* Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for production.**
 
     ```bash
     cd frontend
