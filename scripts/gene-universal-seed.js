@@ -188,7 +188,7 @@ async function promptForDetails(answer) {
     readInterface.close();
     const initialHeaders = line.split(",");
     if (initialHeaders.length < 2) {
-      console.error(chalk.bold("[ERROR]"),"CSV file must have at least two columns");
+      console.error(chalk.bold("[ERROR]"), "CSV file must have at least two columns");
       process.exit(1);
     }
     const ID = initialHeaders.shift();
@@ -231,14 +231,14 @@ async function promptForDetails(answer) {
         console.warn(chalk.bold("[WARN]"), `Header "${header}" Ignored`);
       })
       .filter(Boolean); // Filters out undefined or null values (i.e., ignored headers)
-      
+
     if (headers.length === 0) {
       console.error(chalk.bold("[ERROR]"), "No headers to seed. Exiting...");
       process.exit(1);
     }
-    console.log(chalk.green(chalk.bold("[LOG]"),"Headers (filtered):",chalk.underline(headers)));
+    console.log(chalk.green(chalk.bold("[LOG]"), "Headers (filtered):",chalk.underline(headers)));
     console.log(chalk.green(chalk.bold("[LOG]"), "Gene ID Header:", chalk.underline(ID)));
-    
+
     file = file.split("scripts").at(-1).replace(/^[\\/]/, "").replace(/\\/g, "/");
 
     const driver = neo4j.driver(dbUrl, neo4j.auth.basic(username, password));
@@ -253,7 +253,7 @@ async function promptForDetails(answer) {
       SET ${headers.map((header) => `g.\`${header}\` = row.\`${finalToInitialHeaders[header]}\``).join(",\n")}   
     } IN 24 CONCURRENT TRANSACTIONS;
     `.replace(/"/g, "");
-    
+
     if (!existsSync("cypher/")) mkdirSync("cypher/");
     writeFileSync(`cypher/${Path.parse(file).name}-seed.cypher`, query);
 
@@ -268,11 +268,31 @@ async function promptForDetails(answer) {
       
       await session.run("CREATE TEXT INDEX Gene_name_Gene IF NOT EXISTS FOR (g:Gene) ON (g.Gene_name);");
 
-      const diseaseAndHeadersUpdateQuery = `
-      MERGE (s:Stats { version: 1 }) SET s.common = apoc.coll.toSet(COALESCE(s.common, []) + ${disease ? '[h IN $headers WHERE NOT h STARTS WITH $disease + "_" ]' : '$headers'})
-      ${disease ? `, s.${disease} = apoc.coll.toSet(COALESCE(s.${disease}, []) + [h IN $headers WHERE h STARTS WITH $disease + "_" ])` : ''};`;
-      
-      await session.run(diseaseAndHeadersUpdateQuery, { ...(disease && { disease }), headers });
+      const { commonHeaders, diseaseHeaders } = headers.reduce((acc, header) => {
+        if (disease && header.startsWith(`${disease}_`)) {
+          acc.diseaseHeaders.push(header);
+        } else {
+          acc.commonHeaders.push(header);
+        }
+        return acc;
+      }, { commonHeaders: [], diseaseHeaders: [] });
+      await session.run(`
+      UNWIND $commonHeaders AS commonHeader
+      MERGE (cp:Common&Property { name: commonHeader, description: commonHeader })
+      `, {
+        commonHeaders,
+      });
+
+      await session.run(`
+        MERGE (d:Disease { ID: $disease }) WITH d
+        UNWIND $diseaseHeaders AS diseaseHeader
+        MERGE (dp:Disease&Property { name: diseaseHeader })
+        MERGE (d)-[:HAS_PROPERTY]->(dp);
+        `, {
+          disease,
+          diseaseHeaders,
+        });
+
       console.log(chalk.green(chalk.bold("[LOG]"), "Added Disease, Headers to Stats (If not already present)"));
 
       console.log(chalk.green(chalk.bold("[LOG]"), "Data seeding completed"));

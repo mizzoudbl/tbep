@@ -152,30 +152,28 @@ async function promptForDetails(answer) {
     const column = `${disease ? `${disease}_` : ''}${type}_`;
     try {
         const query = `
-        MATCH (s:Stats { version: 1 })
-        WITH [k IN s.${disease || 'common'} WHERE k STARTS WITH '${column}'] AS keys
+        MATCH (p:Property) WHERE p.name STARTS WITH $column OR p.name IN $header
+        WITH COLLECT(p.name) AS properties
         CALL apoc.periodic.iterate(
-        'MATCH (g:Gene) RETURN g, $keys AS keys',
-        'CALL apoc.create.removeProperties(g,keys + $header) YIELD node FINISH',
-        { batchSize:1000, parallel:true, params: { keys: keys, header: $header } })
+        'MATCH (g:Gene) RETURN g, $properties AS properties',
+        'CALL apoc.create.removeProperties(g,properties) YIELD node FINISH',
+        { batchSize:1000, parallel:true, params: { properties: properties } })
         YIELD committedOperations
-        RETURN keys + $header AS keys, committedOperations;
+        RETURN properties, committedOperations;
         `;
         console.log(chalk.green(chalk.bold("[LOG]"), "This will take a while..."));
         const start = new Date().getTime();
-        const result = await session.run(query, { header: header.filter(Boolean) });
+        const result = await session.run(query, { header, column });
         const end = new Date().getTime();
 
         console.log(chalk.green(chalk.bold("[LOG]"), `Successfully deleted ${type} data for ${disease || "disease independent"} data`));
-        console.log(chalk.green(chalk.bold("[LOG]"), `Properties deleted: \n${result.records[0].get("keys").map(k => `- ${k}`).join("\n ")}`));
+        console.log(chalk.green(chalk.bold("[LOG]"), `Properties deleted: \n${result.records[0].get("properties").map(k => `- ${k}`).join("\n")}`));
         console.log(chalk.green(chalk.bold("[LOG]"), `Committed operations: ${result.records[0].get("committedOperations")}`));
         console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
 
-        const deleteQuery = `
-        MATCH (s:Stats { version: 1 })
-        SET s.${disease || 'common'} = [k IN s.${disease || 'common'} WHERE NOT k STARTS WITH '${column}' AND NOT k IN $header]
-        WITH s WHERE size(s.${disease || 'common'}) = 0 REMOVE s.${disease || 'common'} ${disease ? `MATCH (d:Disease { ID: $disease }) DELETE d` : ''}`;
-        await session.run(deleteQuery, { header });
+        const deleteQuery = 'MATCH (p:Property) WHERE p.name IN $header OR p.name STARTS WITH $column DETACH DELETE p;';
+        await session.run(deleteQuery, { header, column });
+        await session.run('MATCH (d:Disease) WHERE NOT (d)-[:HAS_PROPERTY]->() DELETE d;');
         console.log(chalk.green(chalk.bold("[LOG]"), `Successfully updated stats for ${disease || "disease independent"} data`));
     } catch (error) {
         console.error(chalk.red(chalk.bold("[ERROR]"), `Error deleting ${type} data`), error);
