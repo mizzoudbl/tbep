@@ -3,6 +3,7 @@ services:
   neo4j:
     image: neo4j:5.20-enterprise
     container_name: neo4j
+    restart: 'always'
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -26,8 +27,6 @@ services:
         BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD}
     image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
-    env_file:
-      - frontend/.env
     ports:
       - "3000:80"
     profiles: ["dev"]
@@ -35,6 +34,7 @@ services:
   frontend:
     image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
+    restart: 'always'
     ports:
       - "3000:80"
 
@@ -43,6 +43,7 @@ services:
       context: gsea
       dockerfile: Dockerfile
     container_name: gsea
+    restart: 'always'
     ports:
       - "5000:5000"
   
@@ -52,7 +53,7 @@ services:
       dockerfile: Dockerfile
     container_name: nestjs
     # Change this if running on local to avoid restarting on failure
-    restart: on-failure
+    restart: 'always'
     ports:
       - "4000:4000"
     depends_on:
@@ -64,6 +65,7 @@ services:
   redis:
     image: redis:7.4-alpine
     container_name: redis
+    restart: 'always'
     ports:
       - "6379:6379"
     volumes:
