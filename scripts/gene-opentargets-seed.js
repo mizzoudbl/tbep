@@ -154,16 +154,14 @@ async function promptForDetails(answer) {
     );
     process.exit(1);
   }
-  file = Path.resolve(file).split("scripts").at(-1).replace(/^[\\/]/, "").replace(/\\/g, "/");
-  
+
   const driver = neo4j.driver(dbUrl, neo4j.auth.basic(username, password));
   const session = driver.session({
     database: database,
   });
 
   const query = `
-    LOAD CSV FROM '${
-      /^https?:\/\//.test(file) ? file : `file:///${file.replace(/^\.[\\/]+/,"")}`
+    LOAD CSV FROM '${/^https?:\/\//.test(file) ? file : `file:///${Path.resolve(file).split("scripts").at(-1).replace(/^\.[\\/]+/, "").replace(/\\/g, "/")}`
     }' AS line
     CALL {
       WITH line
@@ -192,36 +190,38 @@ async function promptForDetails(answer) {
     console.log(chalk.green(chalk.bold("[LOG]"), "This will take a while..."));
     const start = new Date().getTime();
     await session.run(query);
-    
-    
+
     const properties = secondColumn.reduce((acc, val) => {
       const disease = val.split("_OpenTargets_").at(0);
       if (!acc.has(disease)) acc.set(disease, new Set());
       acc.get(disease).add(val);
       return acc;
-    }, new Map());
-    
+    }, {});
+
+    for (const disease of Object.keys(properties)) {
+      properties[disease] = Array.from(properties[disease]);
+    }
+
     const diseaseAndHeadersUpdateQuery = `
-    MERGE (s:Stats { version: 1 }) SET 
-    ${Array.from(properties.entries()).map(
-      ([disease, headers]) =>
-        `s.${disease} = apoc.coll.toSet(s.${disease} + [${Array.from(headers)
-          .map((header) => `"${header}"`)
-          .join(", ")}])`
-    ).join(",\n")};`;
-    
+    UNWIND $map AS disease, headers
+    MERGE (d:Disease { ID: disease })
+    WITH d, headers
+    UNWIND headers AS header
+    MERGE (p:Property { name: header })
+    MERGE (d)-[:HAS_PROPERTY]->(p);`;
+
     if (!existsSync("cypher/")) mkdirSync("cypher/");
     writeFileSync(`cypher/${Path.parse(file).name}-seed.cypher`, diseaseAndHeadersUpdateQuery);
-    
-    console.log(chalk.green(chalk.bold("[LOG]"),`Properties updated: ${secondColumn.length}`));
+
+    console.log(chalk.green(chalk.bold("[LOG]"), `Properties updated: ${secondColumn.length}`));
 
     await session.run(diseaseAndHeadersUpdateQuery, {
-      diseases: Array.from(properties.keys()),
+      map: properties,
     });
 
     const end = new Date().getTime();
-    console.log(chalk.green(chalk.bold("[LOG]"),"Added Disease, Headers to Stats (If not already present)"));
-    console.log(chalk.green(chalk.bold("[LOG]"),`Time taken: ${(end - start) / 1000} seconds`));
+    console.log(chalk.green(chalk.bold("[LOG]"), "Added Disease, Headers to database (If not already present)"));
+    console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
     console.log(chalk.green(chalk.bold("[LOG]"), "Data seeding completed"));
   } catch (error) {
     console.error(chalk.bold("[ERROR]"), error);
