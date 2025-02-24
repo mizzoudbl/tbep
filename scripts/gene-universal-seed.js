@@ -236,17 +236,15 @@ async function promptForDetails(answer) {
       console.error(chalk.bold("[ERROR]"), "No headers to seed. Exiting...");
       process.exit(1);
     }
-    console.log(chalk.green(chalk.bold("[LOG]"), "Headers (filtered):",chalk.underline(headers)));
+    console.log(chalk.green(chalk.bold("[LOG]"), "Headers (filtered):", chalk.underline(headers)));
     console.log(chalk.green(chalk.bold("[LOG]"), "Gene ID Header:", chalk.underline(ID)));
-
-    file = file.split("scripts").at(-1).replace(/^[\\/]/, "").replace(/\\/g, "/");
 
     const driver = neo4j.driver(dbUrl, neo4j.auth.basic(username, password));
     const session = driver.session({
       database: database,
     });
     const query = `
-    LOAD CSV WITH HEADERS FROM '${/^https?:\/\//.test(file) ? file : `file:///${file.replace(/^\.[\\/]+/, "")}`}' AS row
+    LOAD CSV WITH HEADERS FROM '${/^https?:\/\//.test(file) ? file : `file:///${Path.resolve(file).split("scripts").at(-1).replace(/^\.[\\/]+/, "").replace(/\\/g, "/")}`}' AS row
     CALL {
       WITH row
       MATCH (g:Gene { ID: row.\`${ID}\` })
@@ -265,7 +263,7 @@ async function promptForDetails(answer) {
 
       console.log(chalk.green(chalk.bold("[LOG]"), `Properties updated: ${result.summary.updateStatistics.updates().propertiesSet}`));
       console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
-      
+
       await session.run("CREATE TEXT INDEX Gene_name_Gene IF NOT EXISTS FOR (g:Gene) ON (g.Gene_name);");
 
       const { commonHeaders, diseaseHeaders } = headers.reduce((acc, header) => {
@@ -289,11 +287,11 @@ async function promptForDetails(answer) {
         MERGE (dp:Disease&Property { name: diseaseHeader })
         MERGE (d)-[:HAS_PROPERTY]->(dp);
         `, {
-          disease,
-          diseaseHeaders,
-        });
+        disease,
+        diseaseHeaders,
+      });
 
-      console.log(chalk.green(chalk.bold("[LOG]"), "Added Disease, Headers to Stats (If not already present)"));
+      console.log(chalk.green(chalk.bold("[LOG]"), "Added Disease, Headers to database (If not already present)"));
 
       console.log(chalk.green(chalk.bold("[LOG]"), "Data seeding completed"));
     } catch (error) {

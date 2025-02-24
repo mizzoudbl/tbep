@@ -174,7 +174,7 @@ async function promptForDetails(answer) {
         const deleteQuery = 'MATCH (p:Property) WHERE p.name IN $header OR p.name STARTS WITH $column DETACH DELETE p;';
         await session.run(deleteQuery, { header, column });
         await session.run('MATCH (d:Disease) WHERE NOT (d)-[:HAS_PROPERTY]->() DELETE d;');
-        console.log(chalk.green(chalk.bold("[LOG]"), `Successfully updated stats for ${disease || "disease independent"} data`));
+        console.log(chalk.green(chalk.bold("[LOG]"), `Successfully updated ${disease || "disease independent"} data`));
     } catch (error) {
         console.error(chalk.red(chalk.bold("[ERROR]"), `Error deleting ${type} data`), error);
     } finally {
