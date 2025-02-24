@@ -6,7 +6,6 @@
 - [Server Configuration](#server-configuration)
 - [Installation](#installation)
 - [License](#license)
-- [Troubleshooting & FAQs](#troubleshooting--faqs)
 
 ## About
 
@@ -141,7 +140,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 
 3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](/frontend/public/video/) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1LvPTY8Z559shYoWTaSOHFuWOFKGG8QHv) and place them inside the mentioned folder.
 
-4. *[Only for Developers]* Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for production.**
+4. *[Only for Developers]* Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for deployment.**
 
     ```bash
     cd frontend
@@ -186,23 +185,13 @@ docker compose restart neo4j
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Shield: [![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
 
-## Troubleshooting & FAQs
+This work is licensed under a
+[Creative Commons Attribution-NonCommercial 4.0 International License][cc-by-nc].
 
-1. File permissions error in frontend container running leading to unable to view pages on website. This may occur when working on restrictive company servers.
-**Fix:**
+[![CC BY-NC 4.0][cc-by-nc-image]][cc-by-nc]
 
-    ```bash
-    docker exec -it frontend chmod -R 777 /usr/share/nginx/html
-    ```
-
-2. Latest changes missing in the frontend.
-**Fix:**
-Pull latest changes relevant branch.
-
-```bash
-git pull
-# OR
-# git pull origin <branch-name>
-```
+[cc-by-nc]: https://creativecommons.org/licenses/by-nc/4.0/
+[cc-by-nc-image]: https://licensebuttons.net/l/by-nc/4.0/88x31.png
+[cc-by-nc-shield]: https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg
