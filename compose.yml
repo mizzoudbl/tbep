@@ -22,11 +22,10 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
-      args:
-        BASIC_AUTH_USERNAME: ${BASIC_AUTH_USERNAME}
-        BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD}
     image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
+    env_file:
+      - frontend/.env.local
     ports:
       - "3000:80"
     profiles: ["dev"]
@@ -34,6 +33,8 @@ services:
   frontend:
     image: bhupesh42/tbep-frontend:pdnet-saipuram-com
     container_name: frontend
+    env_file:
+      - frontend/.env
     restart: 'always'
     ports:
       - "3000:80"
