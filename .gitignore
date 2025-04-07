@@ -4,5 +4,6 @@
 .idea
 node_modules/
 scripts/**/*.csv
-scripts/**/*.cypher
+scripts/**/*.parquet
+scripts/cypher/*.cypher
 *.dump
