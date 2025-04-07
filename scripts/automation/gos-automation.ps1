@@ -4,7 +4,7 @@ $pw = Read-Host -Prompt "Enter the password" -AsSecureString
 $pw = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($pw))
 
 # Get all CSV files in the data directory
-Get-ChildItem -Path "../data/TRANSFORMED-opentargets_association_scores/*.csv" | ForEach-Object {
+Get-ChildItem -Path "../data/opentargets/target-association-scores/*.csv" | ForEach-Object {
     # Check if the file is not in the exclude list
     if (Test-Path $_.FullName -PathType Leaf) {
         Write-Host "Processing file: $($_.Name)"
