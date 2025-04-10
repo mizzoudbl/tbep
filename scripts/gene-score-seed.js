@@ -7,6 +7,7 @@ import Path from "node:path";
 const defaultUsername = "neo4j";
 const defaultDatabase = "tbep";
 const defaultDbUrl = "bolt://localhost:7687";
+const ID_TYPE = ["ENSEMBL-ID", "HGNC-Symbol"];
 
 const argv = yargs(process.argv.slice(2))
 	.option("file", {
@@ -39,6 +40,12 @@ const argv = yargs(process.argv.slice(2))
 		description: "Specify the interaction type",
 		type: "string",
 	})
+	.option("id-type", {
+		alias: "t",
+		description: "Specify the ID type",
+		type: "string",
+		choices: ID_TYPE,
+	})
 	.help()
 	.alias("help", "h")
 	.version("1.0.0")
@@ -70,13 +77,13 @@ async function promptForDetails(answer) {
 		!answer.username && {
 			type: "input",
 			name: "username",
-			message: "Enter the username: (default: neo4j)",
+			message: "Enter the database username:",
 			default: defaultUsername,
 		},
 		!answer.password && {
 			type: "password",
 			name: "password",
-			message: "Enter the password:",
+			message: "Enter the database password:",
 			mask: "*",
 			required: true,
 		},
@@ -93,6 +100,13 @@ async function promptForDetails(answer) {
 			message: "Enter the interaction type [Make sure it's just one word]:",
 			required: true,
 		},
+		!answer.idType && {
+			type: "input",
+			name: "idType",
+			message: "Select the ID type:",
+			choices: ID_TYPE,
+			default: ID_TYPE[0],
+		},
 	].filter(Boolean);
 
 	return inquirer.prompt(questions);
@@ -106,6 +120,7 @@ async function promptForDetails(answer) {
 		password,
 		database,
 		interactionType,
+		idType,
 	} = await argv;
 	console.warn(chalk.bold("[WARN]"), "Make sure to not enter header names in CSV file");
 	console.info(chalk.blue.bold("[INFO]"), chalk.cyan("'1st ENSG Gene ID,2nd ENSG Gene ID,Score' should be the format of CSV file"));
@@ -115,7 +130,8 @@ async function promptForDetails(answer) {
 		!username ||
 		!password ||
 		!database ||
-		!interactionType
+		!interactionType ||
+		!idType
 	) {
 		try {
 			const answers = await promptForDetails({
@@ -125,6 +141,7 @@ async function promptForDetails(answer) {
 				password,
 				database,
 				interactionType,
+				idType,
 			});
 			file ||= answers.file;
 			dbUrl ||= answers.dbUrl;
@@ -132,6 +149,7 @@ async function promptForDetails(answer) {
 			password ||= answers.password;
 			database ||= answers.database;
 			interactionType ||= answers.interactionType;
+			idType ||= answers.idType;
 		} catch (error) {
 			console.info(chalk.blue.bold("[INFO]"), chalk.cyan("Exiting..."));
 			process.exit(0);
@@ -157,8 +175,8 @@ async function promptForDetails(answer) {
 		LOAD CSV FROM '${/^https?:\/\//.test(file) ? file : `file:///${file.replace(/^\.[\\/]+/,"")}`}' AS line
 		CALL {
 			WITH line
-			MERGE (g1:Gene {ID: line[0]})
-			MERGE (g2:Gene {ID: line[1]})
+			MERGE (g1:Gene {${idType === ID_TYPE[0] ? 'ID' : 'Gene_name'}: line[0]})
+			MERGE (g2:Gene {${idType === ID_TYPE[0] ? 'ID' : 'Gene_name'}: line[1]})
 			MERGE (g1)-[r:${interactionType}]->(g2)
 			ON CREATE SET r.score = toFloat(line[2])
 		} IN TRANSACTIONS;

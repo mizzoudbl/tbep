@@ -98,7 +98,7 @@ async function promptForDetails(answer) {
 		(!answer.type || answer.type === "universal") && {
 			type: "input",
 			name: "primaryHeader",
-			message: "Enter primary column in reference genom",
+			message: "Enter primary column in reference genome",
 			default: defaultPrimaryHeader,
 			required: false,
 		},
@@ -106,7 +106,7 @@ async function promptForDetails(answer) {
 		(!answer.type || answer.type === "universal") && {
 			type: "input",
 			name: "secondaryHeader",
-			message: "Enter secondary column in reference genom",
+			message: "Enter secondary column in reference genome",
 			default: defaultSecondaryHeader,
 			required: false,
 		},

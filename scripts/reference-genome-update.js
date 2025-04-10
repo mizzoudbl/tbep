@@ -67,13 +67,13 @@ async function promptForDetails(answer) {
 		!answer.username && {
 			type: "input",
 			name: "username",
-			message: "Enter the username: (default: neo4j)",
+			message: "Enter the database username:",
 			default: defaultUsername,
 		},
 		!answer.password && {
 			type: "password",
 			name: "password",
-			message: "Enter the password:",
+			message: "Enter the database password:",
 			mask: "*",
 			required: true,
 		},
