@@ -44,7 +44,9 @@ const mapColumnNames = async (csvFilePath) => {
     // Map the column names based on MAPPING
     const mappedHeader = header.map((colName) => {
       const trimmedColName = colName.trim();
-      return MAPPING[trimmedColName] ? `OT_Prioritization_${MAPPING[trimmedColName]}` : trimmedColName;
+      return MAPPING[trimmedColName]
+        ? `OT_Prioritization_${MAPPING[trimmedColName]}`
+        : trimmedColName;
     });
 
     // Replace the header with the mapped header
@@ -64,7 +66,11 @@ const mapColumnNames = async (csvFilePath) => {
 };
 
 const args = process.argv.slice(2);
-const defaultCsvFilePath = join(import.meta.dirname, "data", "opentargets-target-prioritization-score.csv");
+const defaultCsvFilePath = join(
+  import.meta.dirname,
+  "data",
+  "opentargets_target_prioritization_score.csv"
+);
 
 const csvFilePath = args[0] || defaultCsvFilePath;
 

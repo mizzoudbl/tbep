@@ -103,7 +103,7 @@ async function promptForDetails(answer) {
   );
   console.info(
     chalk.blue.bold("[INFO]"),
-    chalk.cyan("'diseaseID,disease name' should be the format of CSV file")
+    chalk.cyan("'property name,property description' should be the format of CSV file")
   );
   if (!file || !dbUrl || !username || !password || !database) {
     try {
@@ -130,21 +130,9 @@ async function promptForDetails(answer) {
   }
 
   const driver = neo4j.driver(dbUrl, neo4j.auth.basic(username, password));
-  const session = driver.session({
-    database: database,
-  });
+  const session = driver.session({ database });
 
   try {
-    await session.run(
-      "CREATE CONSTRAINT IF NOT EXISTS FOR (d:Disease) REQUIRE d.ID IS UNIQUE"
-    );
-
-    console.log(
-      chalk.green(
-        chalk.bold("[LOG]"),
-        "Created uniqueness constraint on Disease ID"
-      )
-    );
     console.log(
       chalk.green(
         chalk.bold("[LOG]"),
@@ -160,8 +148,8 @@ async function promptForDetails(answer) {
     }' AS line
 		CALL {
 			WITH line
-			MATCH (d:Disease {ID: line[0]})
-			SET d.name = line[1]
+			MATCH (p:Property { name: line[0]})
+			SET p.description = line[1]
 		} IN TRANSACTIONS;
 		`;
     // record execution time
@@ -173,7 +161,7 @@ async function promptForDetails(answer) {
     console.log(
       chalk.green(
         chalk.bold("[LOG]"),
-        `Disease Added: ${result.summary.counters.updates().propertiesSet}`
+        `Nodes Created: ${result.summary.counters.updates().nodesCreated}`
       )
     );
 

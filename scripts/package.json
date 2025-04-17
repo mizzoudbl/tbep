@@ -8,10 +8,10 @@
     "gus": "node gene-universal-seed.js",
     "gud": "node gene-universal-deletion.js",
     "rgv": "node gene-reference-verify.js",
-    "opp": "node ot-pre-processor.js",
-    "gos": "node gene-opentargets-seed.js",
+    "gottdas": "node gene-opentargets-disease-association-seed.js",
     "rgu": "node reference-genome-update.js",
-    "dms": "node disease-mapping-seed.js"
+    "dms": "node disease-mapping-seed.js",
+    "pdu": "node property-description-update.js"
   },
   "keywords": [],
   "author": "",
