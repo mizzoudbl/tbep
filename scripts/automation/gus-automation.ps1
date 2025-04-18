@@ -2,8 +2,9 @@
 $excludeFiles = @(
     "ppi_db_string.csv",
     "funppi_db_string.csv",
-    "hgnc_master_gene_list_with_uniprot.csv",
-    "target_prioritization_score.csv"
+    "intact_score.csv",
+    "biogrid_score.csv",
+    "hgnc_master_gene_list_with_uniprot.csv"
 )
 
 # Get the password from input
@@ -15,6 +16,6 @@ $pw = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.
 Get-ChildItem -Path "../data/*.csv" -Recurse | ForEach-Object {
     if ($excludeFiles -notcontains $_.Name -and (Test-Path $_.FullName -PathType Leaf) -and $_.Name -notmatch "^transformed_association_") {
         Write-Host "Processing file: $($_.Name)"
-        pnpm gus -f $_.FullName -u neo4j -p "$pw" -d "pdnet-new" -U "bolt://localhost:7687" --nh
+        pnpm gus -f $_.FullName -u neo4j -p "$pw" -d "tbep" -U "bolt://localhost:7687" --nh
     }
 }
