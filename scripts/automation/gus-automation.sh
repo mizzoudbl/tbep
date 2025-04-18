@@ -3,7 +3,13 @@
 # Read password from user input with * as mask
 read -s "Enter password: " password
 
-exclude_files=("ppi_db_string.csv" "funppi_db_string.csv" "hgnc_master_gene_list_with_uniprot.csv" )
+exclude_files=(
+    "ppi_db_string.csv"
+    "funppi_db_string.csv"
+    "intact_score.csv"
+    "biogrid_score.csv"
+    "hgnc_master_gene_list_with_uniprot.csv"
+)
 
 for file in $(find ../data -type f -name "*.csv"); do
     if [[ ! " ${exclude_files[@]} " =~ " ${file} " ]] && [ -e "$file" ]; then
