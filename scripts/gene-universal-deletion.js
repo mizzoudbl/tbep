@@ -81,7 +81,7 @@ const args = yargs(process.argv.slice(2))
   )
   .example(
     chalk.blue(
-      "node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS -t GWAS -H p-value,OR"
+      "node $0 -U bolt://localhost:7687 -u neo4j -p password -d tbep -D MONDO_0004976 -t OpenTargets -H p-value,OR"
     )
   )
   .example(chalk.cyan("Load data in Neo4j")).argv;

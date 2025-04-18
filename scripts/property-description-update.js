@@ -161,7 +161,7 @@ async function promptForDetails(answer) {
     console.log(
       chalk.green(
         chalk.bold("[LOG]"),
-        `Nodes Created: ${result.summary.counters.updates().nodesCreated}`
+        `Property Updated: ${result.summary.counters.updates().propertiesSet}`
       )
     );
 

@@ -93,7 +93,7 @@ const argv = yargs(process.argv.slice(2))
   )
   .example(
     chalk.blue(
-      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS --nh"
+      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D MONDO_0004976 --nh"
     )
   )
   .example(
@@ -360,7 +360,7 @@ async function promptForDetails(answer) {
         await session.run(
           `MERGE (d:Disease { ID: $disease }) WITH d
           UNWIND $diseaseHeaders AS diseaseHeader
-          MERGE (dp:Disease&Property { name: diseaseHeader })
+          MERGE (dp:Property { name: diseaseHeader })
           MERGE (d)-[:HAS_PROPERTY]->(dp);`,
           { disease, diseaseHeaders }
         );

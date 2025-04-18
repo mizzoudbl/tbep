@@ -62,7 +62,7 @@ def process_csv_rows(csv_file, data_source = False):
         df['diseaseId'] = df.apply(lambda row: f"{row['diseaseId']}_OpenTargets_{row['datasourceId']}", axis=1)
         df[['targetId', 'diseaseId', 'score']].to_csv('data/ot_datasource_association_score.csv', index=False, header=False)
     else :
-        df['diseaseId'] = df['diseaseId'].apply(lambda x: f'{x}_OpenTargets_Association Score')
+        df['diseaseId'] = df['diseaseId'].apply(lambda x: f'{x}_OpenTargets_Overall_Association Score')
         df[['targetId', 'diseaseId','score']].to_csv('data/ot_overall_association_score.csv', index=False, header=False)
 
 # Example usage
