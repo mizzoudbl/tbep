@@ -129,13 +129,13 @@ async function promptForDetails(answer) {
     !answer.username && {
       type: "input",
       name: "username",
-      message: "Enter the username: (default: neo4j)",
+      message: "Enter the database username:",
       default: defaultUsername,
     },
     !answer.password && {
       type: "password",
       name: "password",
-      message: "Enter the password:",
+      message: "Enter the database password:",
       mask: "*",
       required: true,
     },
@@ -242,11 +242,6 @@ async function promptForDetails(answer) {
     const headers = initialHeaders
       .map((header) => {
         header = header.trim().replace(/^['\s"]*|['\s"]*$/g, "");
-        if (/target_prioritization_score.csv$/.test(file)) {
-          const res = `OT_Prioritization_${header}`;
-          finalToInitialHeaders[res] = header;
-          return res;
-        }
 
         for (const field of GENERAL_SYMBOLS) {
           if (new RegExp(`^${field}$`, "i").test(header)) {
@@ -350,10 +345,6 @@ async function promptForDetails(answer) {
         )
       );
 
-      await session.run(
-        "CREATE TEXT INDEX Gene_name_Gene IF NOT EXISTS FOR (g:Gene) ON (g.Gene_name);"
-      );
-
       const { commonHeaders, diseaseHeaders } = headers.reduce(
         (acc, header) => {
           if (disease && header.startsWith(`${disease}_`)) {
@@ -365,27 +356,19 @@ async function promptForDetails(answer) {
         },
         { commonHeaders: [], diseaseHeaders: [] }
       );
+      if (disease) {
+        await session.run(
+          `MERGE (d:Disease { ID: $disease }) WITH d
+          UNWIND $diseaseHeaders AS diseaseHeader
+          MERGE (dp:Property { name: diseaseHeader })
+          MERGE (d)-[:HAS_PROPERTY]->(dp);`,
+          { disease, diseaseHeaders }
+        );
+      }
       await session.run(
-        `
-      UNWIND $commonHeaders AS commonHeader
-      MERGE (cp:Common&Property { name: commonHeader, description: commonHeader })
-      `,
-        {
-          commonHeaders,
-        }
-      );
-
-      await session.run(
-        `
-        MERGE (d:Disease { ID: $disease }) WITH d
-        UNWIND $diseaseHeaders AS diseaseHeader
-        MERGE (dp:Disease&Property { name: diseaseHeader })
-        MERGE (d)-[:HAS_PROPERTY]->(dp);
-        `,
-        {
-          disease,
-          diseaseHeaders,
-        }
+        `UNWIND $commonHeaders AS commonHeader
+          MERGE (cp:Common&Property { name: commonHeader });`,
+        { commonHeaders }
       );
 
       console.log(

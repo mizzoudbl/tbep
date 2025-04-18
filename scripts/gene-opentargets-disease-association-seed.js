@@ -1,6 +1,6 @@
 import neo4j from "neo4j-driver";
 import inquirer from "inquirer";
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import yargs from "yargs";
 import chalk from "chalk";
 import Path from "node:path";
@@ -80,13 +80,13 @@ async function promptForDetails(answer) {
     !answer.username && {
       type: "input",
       name: "username",
-      message: "Enter the username: (default: neo4j)",
+      message: "Enter the database username:",
       default: defaultUsername,
     },
     !answer.password && {
       type: "password",
       name: "password",
-      message: "Enter the password:",
+      message: "Enter the database password:",
       mask: "*",
       required: true,
     },
@@ -161,7 +161,14 @@ async function promptForDetails(answer) {
   });
 
   const query = `
-    LOAD CSV FROM '${/^https?:\/\//.test(file) ? file : `file:///${Path.resolve(file).split("scripts").at(-1).replace(/^\.[\\/]+/, "").replace(/\\/g, "/")}`
+    LOAD CSV FROM '${
+      /^https?:\/\//.test(file)
+        ? file
+        : `file:///${Path.resolve(file)
+            .split("scripts")
+            .at(-1)
+            .replace(/^\.[\\/]+/, "")
+            .replace(/\\/g, "/")}`
     }' AS line
     CALL {
       WITH line
@@ -183,45 +190,47 @@ async function promptForDetails(answer) {
         error: (error) => {
           console.error(chalk.bold("[ERROR]"), error);
           process.exit(1);
-        }
+        },
       });
     });
 
     console.log(chalk.green(chalk.bold("[LOG]"), "This will take a while..."));
     const start = new Date().getTime();
-    await session.run(query);
+    const result = await session.run(query);
 
-    const properties = secondColumn.reduce((acc, val) => {
-      const disease = val.split("_OpenTargets_").at(0);
-      if (!acc.has(disease)) acc.set(disease, new Set());
-      acc.get(disease).add(val);
-      return acc;
-    }, {});
+    console.log(
+      chalk.green(
+        chalk.bold("[LOG]"),
+        `Properties updated: ${
+          result.summary.counters.updates().propertiesSet
+        } `
+      )
+    );
 
-    for (const disease of Object.keys(properties)) {
-      properties[disease] = Array.from(properties[disease]);
-    }
+    const diseases = Array.from(
+      new Set(secondColumn.map((val) => val.split("_OpenTargets_").at(0)))
+    );
+    console.log(diseases);
 
-    const diseaseAndHeadersUpdateQuery = `
-    UNWIND $map AS disease, headers
-    MERGE (d:Disease { ID: disease })
-    WITH d, headers
-    UNWIND headers AS header
-    MERGE (p:Property { name: header })
-    MERGE (d)-[:HAS_PROPERTY]->(p);`;
-
-    if (!existsSync("cypher/")) mkdirSync("cypher/");
-    writeFileSync(`cypher/${Path.parse(file).name}-seed.cypher`, diseaseAndHeadersUpdateQuery);
-
-    console.log(chalk.green(chalk.bold("[LOG]"), `Properties updated: ${secondColumn.length}`));
-
-    await session.run(diseaseAndHeadersUpdateQuery, {
-      map: properties,
-    });
+    await session.run(
+      `UNWIND $diseases AS disease
+      MERGE (d:Disease { ID: disease });`,
+      { diseases }
+    );
 
     const end = new Date().getTime();
-    console.log(chalk.green(chalk.bold("[LOG]"), "Added Disease, Headers to database (If not already present)"));
-    console.log(chalk.green(chalk.bold("[LOG]"), `Time taken: ${(end - start) / 1000} seconds`));
+    console.log(
+      chalk.green(
+        chalk.bold("[LOG]"),
+        "Added Disease to database (If not already present)"
+      )
+    );
+    console.log(
+      chalk.green(
+        chalk.bold("[LOG]"),
+        `Time taken: ${(end - start) / 1000} seconds`
+      )
+    );
     console.log(chalk.green(chalk.bold("[LOG]"), "Data seeding completed"));
   } catch (error) {
     console.error(chalk.bold("[ERROR]"), error);

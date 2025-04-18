@@ -3,7 +3,7 @@ import sys
 import os
 import glob
 
-def combine_parquet_files(input_path, output_file):
+def combine_parquet_files(input_path, output_file, tps = False):
     """
     Combine parquet files into a single CSV file.
     
@@ -43,11 +43,12 @@ def combine_parquet_files(input_path, output_file):
         combined_df = pd.concat(dfs, ignore_index=True)
         
         # Drop rows where all columns except targetId have no values
-        if 'targetId' in combined_df.columns:
-            # Create a subset without targetId
-            subset_cols = [col for col in combined_df.columns if col != 'targetId']
-            if subset_cols:  # Make sure there are other columns
-                combined_df = combined_df.dropna(subset=subset_cols, how='all')
+        if tps:
+            if 'targetId' in combined_df.columns:
+                # Create a subset without targetId
+                subset_cols = [col for col in combined_df.columns if col != 'targetId']
+                if subset_cols:  # Make sure there are other columns
+                    combined_df = combined_df.dropna(subset=subset_cols, how='all')
         # Write to CSV
         combined_df.to_csv(output_file, index=False)
         print(f"Successfully combined {len(parquet_files)} parquet files into {output_file}")
@@ -61,14 +62,22 @@ if __name__ == "__main__":
     # Default paths
     input_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data/opentargets/target-prioritization-scores"))
     output_file = os.path.join(os.path.dirname(__file__), "data/opentargets-target-prioritization-score.csv")
+    tps = False
     
-    # Override with command line arguments if provided
-    if len(sys.argv) > 1:
-        input_path = sys.argv[1]
-    if len(sys.argv) > 2:
-        output_file = sys.argv[2]
+    # Parse command line arguments
+    args = sys.argv[1:]
+    if "--tps" in args:
+        tps = True
+        args.remove("--tps")
+    
+    # Override with remaining command line arguments if provided
+    if len(args) > 0:
+        input_path = args[0]
+    if len(args) > 1:
+        output_file = args[1]
     
     print(f"Processing from: {input_path}")
     print(f"Output will be saved to: {output_file}")
+    print(f"TPS filtering: {'enabled' if tps else 'disabled'}")
     
-    combine_parquet_files(input_path, output_file)
+    combine_parquet_files(input_path, output_file, tps)
