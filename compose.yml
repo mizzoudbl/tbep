@@ -23,13 +23,16 @@ services:
       context: frontend
       dockerfile: Dockerfile
     container_name: frontend
-    image: bhupesh42/tbep-frontend:pdnet-missouri-edu
+    image: ghcr.io/mizzoudbl/tbep-frontend
     ports:
       - "3000:80"
     profiles: ["dev"]
 
   frontend:
-    image: bhupesh42/tbep-frontend:pdnet-missouri-edu
+    # Build option is not made available here as this breaks some css in the frontend
+    # when built inside docker container, you can modify the compose yaml 
+    # or use `docker build` command to build the image locally
+    image: ghcr.io/mizzoudbl/tbep-frontend
     container_name: frontend
     restart: 'always'
     ports:
@@ -39,6 +42,7 @@ services:
     build: 
       context: gsea
       dockerfile: Dockerfile
+    image: ghcr.io/mizzoudbl/tbep-gsea
     container_name: gsea
     restart: 'always'
     ports:
@@ -48,6 +52,7 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
+    image: ghcr.io/mizzoudbl/tbep-nestjs
     container_name: nestjs
     # Change this if running on local to avoid restarting on failure
     restart: 'always'
@@ -62,6 +67,7 @@ services:
   redis:
     image: redis:7.4-alpine
     container_name: redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     restart: 'always'
     ports:
       - "6379:6379"

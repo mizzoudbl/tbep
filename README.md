@@ -124,10 +124,10 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 1. Clone the repository
 
     ```bash
-    git clone --depth 1 --recurse-submodules https://github.com/bhupesh98/tbep.git && cd tbep
+    git clone --depth 1 --recurse-submodules https://github.com/mizzoudbl/tbep.git && cd tbep
     ```
 
-2. Fill environment variables in `.env`, `backend/.env` & `frontend/.env` using [`.env.example`](.env.example), [`backend/.env.example`](https://github.com/bhupesh98/tbep-backend/blob/main/.env.example) & [`frontend/.env.example](https://github.com/bhupesh98/tbep-frontend/blob/main/.env.example) file.
+2. Fill environment variables in `.env`, `backend/.env` & `frontend/.env` using [`.env.example`](.env.example), [`backend/.env.example`](https://github.com/mizzoudbl/tbep-backend/blob/main/.env.example) & [`frontend/.env.example](https://github.com/mizzoudbl/tbep-frontend/blob/main/.env.example) file.
 
     ```bash
     cp .env.example .env

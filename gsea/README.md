@@ -4,7 +4,7 @@
 
 ```bash
 # Create a new server block (change filename as per requirement)
-sudo vim /etc/nginx/conf.d/pdnet-rnd-papis.conf
+sudo vim /etc/nginx/conf.d/<domain-name>.conf
 # Frontend configuration
 ```
 
@@ -12,11 +12,11 @@ sudo vim /etc/nginx/conf.d/pdnet-rnd-papis.conf
 server {
     listen 80;
     # Can change the hosting link accordingly
-    server_name pdnet-rnd-papis.crecientech.com;
+    server_name <domain-name>;
 
     location / {
         # Change the port as per requirement
-        proxy_pass http://localhost:8000;
+        proxy_pass http://localhost:8000/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

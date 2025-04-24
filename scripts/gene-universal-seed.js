@@ -14,12 +14,6 @@ import Path from "node:path";
 const defaultUsername = "neo4j";
 const defaultDatabase = "tbep";
 const defaultDbUrl = "bolt://localhost:7687";
-const GENERAL_SYMBOLS = [
-  "hgnc_gene_id",
-  "Description",
-  "Gene_name",
-  "Gene name",
-];
 const DISEASE_DEPENDENT_FIELDS = ["LogFC", "DEG", "OpenTargets"];
 const DISEASE_INDEPENDENT_FIELDS = [
   "Druggability_Score",
@@ -223,7 +217,6 @@ async function promptForDetails(answer) {
     process.exit(1);
   }
 
-  GENERAL_SYMBOLS.push(...header);
   const finalToInitialHeaders = {};
   const readInterface = createInterface({
     input: createReadStream(file),
@@ -242,14 +235,6 @@ async function promptForDetails(answer) {
     const headers = initialHeaders
       .map((header) => {
         header = header.trim().replace(/^['\s"]*|['\s"]*$/g, "");
-
-        for (const field of GENERAL_SYMBOLS) {
-          if (new RegExp(`^${field}$`, "i").test(header)) {
-            const res = RENAMED_FIELDS[field] ?? field;
-            finalToInitialHeaders[res] = header;
-            return res;
-          }
-        }
 
         // Conditions for modifying the header based on prefixes (ignoring case)
         if (disease) {

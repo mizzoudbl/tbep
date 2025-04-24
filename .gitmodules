@@ -1,6 +1,6 @@
 [submodule "frontend"]
 	path = frontend
-	url = https://github.com/bhupesh98/tbep-frontend.git
+	url = https://github.com/mizzoudbl/tbep-frontend.git
 [submodule "backend"]
 	path = backend
-	url = https://github.com/bhupesh98/tbep-backend.git
+	url = https://github.com/mizzoudbl/tbep-backend.git

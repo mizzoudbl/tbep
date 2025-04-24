@@ -2,7 +2,7 @@
 
 ## GraphQL Endpoints
 
-**GraphQL Endpoint URL:** `https://pdnet.missouri.edu/graphql`
+**GraphQL Endpoint URL:** `https://tbep.missouri.edu/graphql`
 
 ### 1. **Fetch Gene Interactions Network**
 
@@ -262,7 +262,7 @@ query GetDiseaseList {
 
 ### 1. **Leiden Algorithm**
 
-- **Base Endpoint:** `https://pdnet.missouri.edu/algorithm`
+- **Base Endpoint:** `https://tbep.missouri.edu/algorithm`
 
 - **Request**
 
@@ -309,7 +309,7 @@ GET /leiden?graphName=8ccf297799d6466a1e465b7f03457f5c7f09ec052eab8c6e4bd642bd6f
 
 ### 2. **GSEA Analysis**
 
-- **Base Endpoint:** `https://pdnet.missouri.edu`
+- **Base Endpoint:** `https://tbep.missouri.edu`
 
 - **Request**
 
@@ -362,7 +362,7 @@ Content-Type: application/json
 
 ### 3. **LLM Chatbot**
 
-- **Base Endpoint:** `https://pdnet.missouri.edu/llm`
+- **Base Endpoint:** `https://tbep.missouri.edu/llm`
 
 #### Initialize Chat Stream
 
