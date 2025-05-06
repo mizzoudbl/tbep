@@ -15,7 +15,7 @@ df = pd.concat([df_kegg, df_reactome], ignore_index=True)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://pdnet.saipuram.com", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_methods=["POST","GET"],
     allow_headers=["*"],
 )
