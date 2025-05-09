@@ -10,7 +10,9 @@ $MAX_JOBS = 20
 New-Item -Path "../data/overall" -ItemType Directory -Force
 
 # Base URL
-$BASE_URL = "ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_overall_direct"
+$BASE_URL = "http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_overall_indirect"
+
+$fileID = (Invoke-WebRequest -Uri $BASE_URL).Links | Select-Object -Last 1 | Select-String -Pattern 'href="([^"]+\.parquet)"' | ForEach-Object { ($_ -match 'href="part-\d{5}-([^"]+\.parquet)"') | Out-Null; $matches[1] }
 
 # Array to hold jobs
 $jobs = @()
@@ -21,12 +23,12 @@ for ($i = 0; $i -lt 200; $i++) {
     
     # Start a background job
     $job = Start-Job -ScriptBlock {
-        param($paddedNumber, $BASE_URL)
+        param($paddedNumber, $BASE_URL, $fileID)
         Write-Output "Downloading part-$paddedNumber..."
-        Invoke-WebRequest -Uri "$BASE_URL/part-$paddedNumber-67ea6339-0087-4bca-bb51-0de521275806-c000.snappy.parquet" -OutFile "../data/overall/part-$paddedNumber-67ea6339-0087-4bca-bb51-0de521275806-c000.snappy.parquet"
+        Invoke-WebRequest -Uri "$BASE_URL/part-$paddedNumber-$fileID" -OutFile "../data/overall/part-$paddedNumber-$fileID"
         Write-Output "Finished part-$paddedNumber"
-    } -ArgumentList $paddedNumber, $BASE_URL
-    
+    } -ArgumentList $paddedNumber, $BASE_URL, $fileID
+
     $jobs += $job
     
     # If we reach the max job limit, wait for one to complete
@@ -48,8 +50,9 @@ Write-Output "Downloading Overall Association Score completed."
 New-Item -Path "../data/data-source" -ItemType Directory -Force
 
 # Base URL for data source
-$BASE_URL = "ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_datasource_direct"
+$BASE_URL = "http://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_datasource_indirect"
 
+$fileID = (Invoke-WebRequest -Uri $BASE_URL).Links | Select-Object -Last 1 | Select-String -Pattern 'href="([^"]+\.parquet)"' | ForEach-Object { ($_ -match 'href="part-\d{5}-([^"]+\.parquet)"') | Out-Null; $matches[1] }
 # Clear jobs array
 $jobs = @()
 
@@ -59,12 +62,12 @@ for ($i = 0; $i -lt 200; $i++) {
     
     # Start a background job
     $job = Start-Job -ScriptBlock {
-        param($paddedNumber, $BASE_URL)
+        param($paddedNumber, $BASE_URL, $fileID)
         Write-Output "Downloading part-$paddedNumber..."
-        Invoke-WebRequest -Uri "$BASE_URL/part-$paddedNumber-ff24ab98-2b98-48d9-a85b-f94f710232ea-c000.snappy.parquet" -OutFile "../data/data-source/part-$paddedNumber-ff24ab98-2b98-48d9-a85b-f94f710232ea-c000.snappy.parquet"
+        Invoke-WebRequest -Uri "$BASE_URL/part-$paddedNumber-$fileID" -OutFile "../data/data-source/part-$paddedNumber-$fileID"
         Write-Output "Finished part-$paddedNumber"
-    } -ArgumentList $paddedNumber, $BASE_URL
-    
+    } -ArgumentList $paddedNumber, $BASE_URL, $fileID
+
     $jobs += $job
     
     # If we reach the max job limit, wait for one to complete
@@ -82,8 +85,9 @@ $jobs | Remove-Job
 
 Write-Output "Downloading Association by DataSource Score completed."
 
+Set-Location ../
 
-python ../ot-association-preprocessing.py
+python ot-association-preprocessing.py
 
-node ../gene-opentargets-disease-association-seed.js -f ../data/ot_overall_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
-node ../gene-opentargets-disease-association-seed.js -f ../data/ot_datasource_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
+node gene-opentargets-disease-association-seed.js -f data/ot_overall_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
+node gene-opentargets-disease-association-seed.js -f data/ot_datasource_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep

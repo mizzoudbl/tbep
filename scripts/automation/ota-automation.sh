@@ -13,14 +13,14 @@ mkdir -p ../data/overall
 
 # Base URL
 BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_overall_direct"
-
+fileID=$(curl -s $BASE_URL | tail -n 1 | grep -oE 'part-[0-9]{5}-[^"]+\.parquet' | head -n 1 | cut -c12-)
 # Job counter
 job_count=0
 
 for i in $(seq -f '%05g' 0 199); do
     (
         echo "Downloading part-$i..."
-        wget -q -P ../data/overall "${BASE_URL}/part-$i-67ea6339-0087-4bca-bb51-0de521275806-c000.snappy.parquet"
+        wget -q -P ../data/overall "${BASE_URL}/part-$i-$fileID"
         echo "Finished part-$i"
     ) &
 
@@ -37,14 +37,14 @@ echo "Downloading Overall Association Score completed."
 mkdir -p ../data/data-source
 # Base URL
 BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_datasource_direct"
-
+fileID=$(curl -s $BASE_URL | tail -n 1 | grep -oE 'part-[0-9]{5}-[^"]+\.parquet' | head -n 1 | cut -c12-)
 # Job counter
 job_count=0
 
 for i in $(seq -f '%05g' 0 199); do
     (
         echo "Downloading part-$i..."
-        wget -q -P ../data/data-source "${BASE_URL}/part-$i-ff24ab98-2b98-48d9-a85b-f94f710232ea-c000.snappy.parquet"
+        wget -q -P ../data/data-source "${BASE_URL}/part-$i-$fileID"
         echo "Finished part-$i"
     ) &
 
@@ -58,7 +58,8 @@ done
 
 echo "Downloading Association by DataSource Score completed."
 
-python3 ../ot-association-preprocessing.py
+cd ..
+python3 ot-association-preprocessing.py
 
-node ../gene-opentargets-disease-association-seed.js -f ../data/ot_overall_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
-node ../gene-opentargets-disease-association-seed.js -f ../data/ot_datasource_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
+node gene-opentargets-disease-association-seed.js -f data/ot_overall_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
+node gene-opentargets-disease-association-seed.js -f data/ot_datasource_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
