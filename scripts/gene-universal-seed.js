@@ -231,7 +231,7 @@ async function promptForDetails(answer) {
       );
       process.exit(1);
     }
-    const ID = initialHeaders.shift();
+    const ID = initialHeaders.shift()?.trim();
     const headers = initialHeaders
       .map((header) => {
         header = header.trim().replace(/^['\s"]*|['\s"]*$/g, "");

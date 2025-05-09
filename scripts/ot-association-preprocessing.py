@@ -45,10 +45,10 @@ def process_csv_rows(csv_file, data_source = False):
         import json
         # Load the mapping dictionary from JSON file
         try:
-            with open('mapping.json', 'r') as f:
+            with open('data/mapping.json', 'r') as f:
                 mapping = json.load(f)
         except FileNotFoundError:
-            print("Error: mapping.json file not found. Please ensure the file exists in the current directory.")
+            print("Error: mapping.json file not found. Please ensure the file exists in the data/ directory.")
             return
         except json.JSONDecodeError:
             print("Error: mapping.json contains invalid JSON format.")
