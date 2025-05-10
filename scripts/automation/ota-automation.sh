@@ -12,7 +12,7 @@ MAX_JOBS=20
 mkdir -p ../data/overall
 
 # Base URL
-BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_overall_direct"
+BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_overall_indirect"
 fileID=$(curl -s $BASE_URL | tail -n 1 | grep -oE 'part-[0-9]{5}-[^"]+\.parquet' | head -n 1 | cut -c12-)
 # Job counter
 job_count=0
@@ -36,7 +36,7 @@ echo "Downloading Overall Association Score completed."
 
 mkdir -p ../data/data-source
 # Base URL
-BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_datasource_direct"
+BASE_URL="ftp://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/association_by_datasource_indirect"
 fileID=$(curl -s $BASE_URL | tail -n 1 | grep -oE 'part-[0-9]{5}-[^"]+\.parquet' | head -n 1 | cut -c12-)
 # Job counter
 job_count=0

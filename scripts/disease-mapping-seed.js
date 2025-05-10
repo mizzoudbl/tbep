@@ -167,6 +167,7 @@ async function promptForDetails(answer) {
     // record execution time
     const start = new Date().getTime();
     const result = await session.run(query);
+    await session.run('MATCH (d:Disease) WHERE d.name IS NULL DELETE d;');
     const end = new Date().getTime();
 
     console.log(chalk.green(chalk.bold("[LOG]"), "Data loaded using LOAD CSV"));
