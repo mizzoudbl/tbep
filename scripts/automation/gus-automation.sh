@@ -14,6 +14,6 @@ exclude_files=(
 for file in $(find ../data -type f -name "*.csv"); do
     if [[ ! " ${exclude_files[@]} " =~ " ${file} " ]] && [ -e "$file" ]; then
         echo "Processing file: $(basename "$file")"
-        pnpm gus -f "$file" -u neo4j -p  -d tbep -U bolt://localhost:7687 --nh
+        pnpm gus -f "$file" -u neo4j -p "$password" -d tbep -U bolt://localhost:7687 --nh
     fi
 done

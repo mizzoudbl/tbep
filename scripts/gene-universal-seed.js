@@ -14,6 +14,7 @@ import Path from "node:path";
 const defaultUsername = "neo4j";
 const defaultDatabase = "tbep";
 const defaultDbUrl = "bolt://localhost:7687";
+const ID_TYPE = ["ENSEMBL-ID", "HGNC-Symbol"];
 const DISEASE_DEPENDENT_FIELDS = ["LogFC", "DEG", "OpenTargets"];
 const DISEASE_INDEPENDENT_FIELDS = [
   "Druggability_Score",
@@ -25,7 +26,6 @@ const DISEASE_INDEPENDENT_FIELDS = [
 const RENAMED_FIELDS = {
   Druggability_Score: "Druggability",
   LogFC: "DEG",
-  "Gene name": "Gene_name",
 };
 
 // Command-line argument parsing with yargs
@@ -76,23 +76,29 @@ const argv = yargs(process.argv.slice(2))
     type: "boolean",
     default: false,
   })
+  .option("id-type", {
+    alias: "t",
+    description: "Specify the ID type",
+    type: "string",
+    choices: ID_TYPE,
+  })
   .help()
   .alias("help", "h")
   .version("1.0.0")
   .alias("version", "v")
   .usage(
     chalk.green(
-      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease> [-H | --header] <headers> [-di | --diseaseIndependent]"
+      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-D | --disease] <disease> [-H | --header] <headers> [-di | --diseaseIndependent] [-t | --id-type] <Ensembl-ID | HGNC-Symbol>"
     )
   )
   .example(
     chalk.blue(
-      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D ALS --nh"
+      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -D MONDO_0004976 --nh -t Ensembl-ID"
     )
   )
   .example(
     chalk.blue(
-      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep --di --nh"
+      "node $0 -f universal.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep --di --nh -t HGNC-Symbol"
     )
   )
   .example(chalk.cyan("Load data in Neo4j")).argv;
@@ -153,6 +159,13 @@ async function promptForDetails(answer) {
       message: "Enter the headers to forcefully include: (comma separated)",
       filter: (input) => input.split(",").map((header) => header.trim()),
     },
+    !answer.idType && {
+      type: "input",
+      name: "idType",
+      message: "Select the ID type:",
+      choices: ID_TYPE,
+      default: ID_TYPE[0],
+    },
   ].filter(Boolean);
 
   return inquirer.prompt(questions);
@@ -169,6 +182,7 @@ async function promptForDetails(answer) {
     header,
     noHeader,
     diseaseIndependent,
+    idType,
   } = await argv;
   if (
     !file ||
@@ -177,7 +191,8 @@ async function promptForDetails(answer) {
     !password ||
     !database ||
     !disease ||
-    !header
+    !header ||
+    !idType
   ) {
     try {
       const answers = await promptForDetails({
@@ -188,6 +203,7 @@ async function promptForDetails(answer) {
         database,
         disease,
         diseaseIndependent,
+        idType,
         ...(noHeader && { header: [] }),
       });
       file ||= answers.file;
@@ -197,6 +213,7 @@ async function promptForDetails(answer) {
       database ||= answers.database;
       disease ||= answers.disease?.toUpperCase();
       header ||= answers.header || [];
+      idType ||= answers.idType;
     } catch (error) {
       console.info(chalk.blue.bold("[INFO]"), chalk.cyan("Exiting..."));
       process.exit(0);
@@ -294,7 +311,9 @@ async function promptForDetails(answer) {
     }' AS row
     CALL {
       WITH row
-      MATCH (g:Gene { ID: row.\`${ID}\` })
+      MATCH (g:Gene { ${
+        idType === ID_TYPE[0] ? "ID" : "Gene_name"
+      }: row.\`${ID}\` })
       SET ${headers
         .map(
           (header) =>

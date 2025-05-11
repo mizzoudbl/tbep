@@ -52,12 +52,12 @@ const argv = yargs(process.argv.slice(2))
   .alias("version", "v")
   .usage(
     chalk.green(
-      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-i | --interactionType] <interactionType>"
+      "Usage: $0 [-f | --file] <filename> [-U | --dbUrl] <url> [-u | --username] <username> [-p | --password] <password> [-d | --database] <database> [-i | --interactionType] <interactionType> [-t | --id-type] <Ensembl-ID | HGNC-Symbol>"
     )
   )
   .example(
     chalk.blue(
-      "node $0 -f data.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -i PPI"
+      "node $0 -f data.csv -U bolt://localhost:7687 -u neo4j -p password -d tbep -i PPI -t Ensembl-ID"
     )
   )
   .example(chalk.cyan("Load data in Neo4j")).argv;
