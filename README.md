@@ -138,7 +138,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 > 💡 **NOTE**
 > If you are developing this application, then only steps 3 and 4 are required. For production, you can pull the relevant docker images and skip the steps 3 & 4. 
 
-3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](/frontend/public/video/) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1LvPTY8Z559shYoWTaSOHFuWOFKGG8QHv) and place them inside the mentioned folder.
+3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](/frontend/public/video/) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1lPA_F8oyIHQddTmsTEK1VU92WnYp-YD7?usp=sharing) and place them inside the mentioned folder.
 
 4. *[Only for Developers]* Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for deployment.**
 
