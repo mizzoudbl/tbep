@@ -5,6 +5,8 @@
 - [About](#about)
 - [Server Configuration](#server-configuration)
 - [Installation](#installation)
+- [Importing/Exporting Neo4j Data Dump](#importingexporting-neo4j-data-dump)
+- [ClickHouse Data Export/Import](#clickhouse-data-exportimport)
 - [License](#license)
 
 ## About
@@ -179,9 +181,153 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 
 6. Once, data is seeded successfully and database is online. Restart the neo4j service.
 
-```bash
-docker compose restart neo4j
-```
+    ```bash
+    docker compose restart neo4j
+    ```
+
+7. Load ClickHouse data into the database (if you have `.tsv` backup files):
+
+    - Ensure your `.tsv` files are placed in the [`scripts/data/backup/clickhouse`](./scripts/data/backup/clickhouse/) directory.
+    - Ensure all services (including ClickHouse) are already running, as tables are created automatically by the application.
+
+    - Load all tables from the backup:
+
+        ```bash
+        docker exec -it clickhouse bash -c '
+          for f in /backup/clickhouse/*.tsv; do
+            t=$(basename "$f" .tsv)
+            clickhouse-client --query="INSERT INTO $t FORMAT TabSeparated" < "$f"
+            echo "Loaded $t from $f"
+          done
+        '
+        ```
+
+    > 💡 **NOTE**  
+    > The application will auto-create tables on startup. Ensure the `.tsv` files match the expected schema.
+    > For more details on importing/exporting ClickHouse data, see the [ClickHouse Data Export/Import](#clickhouse-data-exportimport) section below.
+
+    > 💡 **NOTE**
+    > If you are a developer, you can run use [docker-compose.dev.yml](../docker-compose.dev.yml) file to run the services in development mode. This will allow you to make changes in the code and see the changes reflected in the browser without restarting the services.
+
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+    ```
+
+For more information of backend and frontend, refer to the respective README files in the [backend](./backend/README.md) and [frontend](./frontend/README.md) directories.
+
+## Importing/Exporting Neo4j Data Dump
+
+1. Export the database dump from the database.
+
+    ```bash
+    # Dump the database
+    docker exec -it neo4j neo4j-admin database dump --overwrite-destination --to-path=/var/lib/neo4j/import/data/backup tbep 
+    ```
+
+  Now, the database dump is available in the [backup](./scripts/data/backup) folder. If there's already a dump file present, it will overwrite it. It's better to rename the existing dump file before exporting the data in case something goes wrong, you do not lose the data. This dump file is now ready to be imported into another database.
+
+2. The database dump can be imported into another database using the following command.
+
+    ```bash
+    # First, make the database offline
+    docker exec -it neo4j cypher-shell -u neo4j -p $NEO4J_PASSWORD "STOP DATABASE tbep;"
+    # Now, you can import the database dump
+    docker exec -it neo4j neo4j-admin database load --overwrite-destination --from-path=/var/lib/neo4j/import/data/backup tbep
+    # Now, restart the container
+    docker compose down neo4j && docker compose up -d neo4j
+    # Now, you can start the database
+    docker exec -it neo4j cypher-shell -u neo4j -p $NEO4J_PASSWORD "CREATE DATABASE tbep IF NOT EXISTS; START DATABASE tbep;"
+    ```
+
+    > 💡 **NOTE**  
+    > The above command will overwrite the existing database. If you want to keep the existing database, you can create a new database and import the data into that database and then switch to the new database.
+
+3. For ingesting data into the database, refer to the [Scripts Usage Documentation](./scripts/README.md).
+
+---
+
+## ClickHouse Data Export/Import
+
+### Exporting ClickHouse Data
+
+To export all ClickHouse tables as `.tsv` files (one file per table):
+
+1. **Run this command inside your ClickHouse container:**  
+   (Run on the server)
+    ```bash
+    docker exec -it clickhouse bash -c '
+      mkdir -p /backup/clickhouse
+      for t in $(clickhouse-client --query="SHOW TABLES" --format=TabSeparated); do
+        clickhouse-client --query="SELECT * FROM $t FORMAT TabSeparated" > /backup/clickhouse/${t}.tsv
+        echo "Exported $t to /backup/clickhouse/${t}.tsv"
+      done
+    '
+    ```
+    - This will create one `.tsv` file per table in the `/scripts/data/backup/clickhouse` directory (mounted as `/backup/clickhouse` in the container).
+
+2. **Transfer the `.tsv` files to your local machine:**  
+   (Run on your local machine)
+    ```bash
+    scp -P <port> -r <username>@<server-ip>:/path/to/server/scripts/data/backup/clickhouse/*.tsv /path/to/local/backup/
+    ```
+    - Replace `<port>`, `<username>`, and `<server-ip>` with your server details.
+
+---
+
+### Importing ClickHouse Data
+
+If you have received `.tsv` files for ClickHouse tables (one file per table), follow these steps to load all data into your ClickHouse instance:
+
+1. **Transfer the `.tsv` files to the server**  
+   (Run on your local machine)
+   Use `scp` or another secure copy method to transfer all `.tsv` files to the server.  
+   For example:
+   ```bash
+   scp -P <port> -r /path/to/local/backup/*.tsv <username>@<server-ip>:/path/to/server/scripts/data/backup/clickhouse/
+   ```
+   - Replace `<port>`, `<username>`, and `<server-ip>` with your server details.
+   - Adjust the destination path as needed to match your server's directory structure.
+
+2. **Ensure the backup directory is mounted in Docker**  
+   (Check on the server)
+   Your `docker-compose.yml` should include this volume for the ClickHouse service:
+   ```yaml
+   services:
+     clickhouse:
+       ...
+       volumes:
+         - clickhouse-data:/var/lib/clickhouse
+         - ./scripts/data/backup:/backup
+   ```
+
+3. **Start all services (tables will be auto-created by the app):**  
+   (Run on the server)
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Load all tables from the backup**  
+   (Run on the server)
+   Run this command to import all `.tsv` files from the backup directory:
+   ```bash
+   docker exec -it clickhouse bash -c '
+     for f in /backup/clickhouse/*.tsv; do
+       t=$(basename "$f" .tsv)
+       clickhouse-client --query="INSERT INTO $t FORMAT TabSeparated" < "$f"
+       echo "Loaded $t from $f"
+     done
+   '
+   ```
+
+---
+
+**General Guidelines:**  
+- Ensure the `.tsv` files are transferred to the correct directory on the server before running the import command.
+- The application will automatically create all required tables on startup.
+- The `.tsv` files must match the schema expected by the application.
+- If you need to adjust the backup path, update the volume mount and the import command accordingly.
+
+---
 
 ## License
 

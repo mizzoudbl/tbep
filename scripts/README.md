@@ -191,3 +191,16 @@ echo "Running pipeline from: $WORKDIR" | tee -a "$LOGFILE"
   echo "✅ Pipeline completed successfully."
 } 2>&1 | tee -a "$LOGFILE"
 ```
+
+
+# ClickHouse Data Ingestion
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Ingest overall association scores into ClickHouse
+python clickhouse-overall-association-seed.py data/ot_25.03_overall_association_score.csv data/hgnc_master_gene_list_with_uniprot.csv
+```
+
+> See the script [`clickhouse-overall-association-seed.py`](./clickhouse-overall-association-seed.py) for details and customization.

@@ -317,7 +317,11 @@ async function promptForDetails(answer) {
       SET ${headers
         .map(
           (header) =>
-            `g.\`${header}\` = row.\`${finalToInitialHeaders[header]}\``
+            `g.\`${header}\` = ${
+              header.startsWith("Pathway_")
+                ? `toInteger(row.\`${finalToInitialHeaders[header]}\`)`
+                : `toFloat(row.\`${finalToInitialHeaders[header]}\`)`
+            }`
         )
         .join(",\n")}   
     } IN 24 CONCURRENT TRANSACTIONS;

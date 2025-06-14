@@ -1,0 +1,14 @@
+services:
+  clickhouse:
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000:9000"   # Native TCP interface
+
+  redis:
+    ports:
+      - "6379:6379"   # Redis default port
+
+  neo4j:
+    ports:
+      - "7474:7474"   # HTTP interface
+      - "7687:7687"   # Bolt interface
