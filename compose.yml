@@ -4,9 +4,6 @@ services:
     image: neo4j:5.20-enterprise
     container_name: neo4j
     restart: 'always'
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     environment:
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
@@ -18,20 +15,10 @@ services:
       - ../neo4j/data:/var/lib/neo4j/data
       - ./plugins:/var/lib/neo4j/plugins
 
-  frontend-dev:
+  frontend:
     build:
       context: frontend
       dockerfile: Dockerfile
-    container_name: frontend
-    image: ghcr.io/mizzoudbl/tbep-frontend
-    ports:
-      - "3000:80"
-    profiles: ["dev"]
-
-  frontend:
-    # Build option is not made available here as this breaks some css in the frontend
-    # when built inside docker container, you can modify the compose yaml 
-    # or use `docker build` command to build the image locally
     image: ghcr.io/mizzoudbl/tbep-frontend
     container_name: frontend
     restart: 'always'
@@ -61,6 +48,7 @@ services:
     depends_on:
       - neo4j
       - redis
+      - clickhouse
     env_file:
       - backend/.env
   
@@ -69,10 +57,22 @@ services:
     container_name: redis
     command: redis-server --requirepass ${REDIS_PASSWORD}
     restart: 'always'
-    ports:
-      - "6379:6379"
     volumes:
       - redis-cache:/data
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: clickhouse
+    restart: always
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./scripts/data/backup:/backup
+    environment:
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+
+
+
 volumes:
   redis-cache:
+  clickhouse-data:
