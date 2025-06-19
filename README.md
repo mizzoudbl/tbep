@@ -140,7 +140,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 > 💡 **NOTE**
 > If you are developing this application, then only steps 3 and 4 are required. For production, you can pull the relevant docker images and skip the steps 3 & 4. 
 
-3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](/frontend/public/video/) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1lPA_F8oyIHQddTmsTEK1VU92WnYp-YD7?usp=sharing) and place them inside the mentioned folder.
+3. *[Only for Developers]* Download the video files if available and place them inside the [`frontend/public/video/`](https://github.com/mizzoudbl/tbep-frontend/tree/main/public/video) folder. As the video files are large, they are not included in the repository or tracked via `git lfs`. You can download the video files from the [gdrive folder](https://drive.google.com/drive/folders/1lPA_F8oyIHQddTmsTEK1VU92WnYp-YD7?usp=sharing) and place them inside the mentioned folder.
 
 4. *[Only for Developers]* Due to some weird css issue when building the frontend container, it is recommended for development (`dev` profile) to build the frontend using the following command before running the docker-compose up command. **This step is not required for deployment.**
 
@@ -185,11 +185,10 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     docker compose restart neo4j
     ```
 
-7. Load ClickHouse data into the database (if you have `.tsv` backup files):
+7. Load ClickHouse data into the database (if you have `.tsv` backup files). You can get the `.tsv` files from this [gdrive folder](https://drive.google.com/drive/u/2/folders/1hoTWkPy0De9uevtK4YMxGSCmUwijY29y). Unzip the files and place them in the `scripts/data/backup/clickhouse` directory.
 
     - Ensure your `.tsv` files are placed in the [`scripts/data/backup/clickhouse`](./scripts/data/backup/clickhouse/) directory.
     - Ensure all services (including ClickHouse) are already running, as tables are created automatically by the application.
-
     - Load all tables from the backup:
 
         ```bash
@@ -213,7 +212,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
     docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
     ```
 
-For more information of backend and frontend, refer to the respective README files in the [backend](./backend/README.md) and [frontend](./frontend/README.md) directories.
+For more information of backend and frontend, refer to the respective README files in the [backend](https://github.com/mizzoudbl/tbep-backend/blob/main/README.md) and [frontend](https://github.com/mizzoudbl/tbep-frontend/blob/main/README.md) directories.
 
 ## Importing/Exporting Neo4j Data Dump
 
