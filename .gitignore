@@ -8,3 +8,4 @@ scripts/**/*.tsv
 scripts/**/*.parquet
 scripts/cypher/*.cypher
 *.dump
+__pycache__/

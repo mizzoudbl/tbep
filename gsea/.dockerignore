@@ -1,2 +1,6 @@
 # Name your virtual environment accordingly
 venv/
+__pycache__/
+# Ignore Python bytecode files
+*.pyc
+README.md
