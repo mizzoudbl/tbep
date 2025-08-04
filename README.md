@@ -1,8 +1,12 @@
 # Target & Biomarker Exploration Portal
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16742136.svg)](https://doi.org/10.5281/zenodo.16742136)
+
 ## Table of Contents
 
 - [About](#about)
+- [Citation](#citation)
+- [Changelog](#changelog)
 - [Server Configuration](#server-configuration)
 - [Installation](#installation)
 - [Importing/Exporting Neo4j Data Dump](#importingexporting-neo4j-data-dump)
@@ -12,6 +16,18 @@
 ## About
 
 We present a novel web-based bio-informatics tool designed to facilitate the identification of novel therapeutic targets and biomarkers for drug discovery. The tool integrates multi-omics datasets rooted in human genetics and utilizes experimentally validated protein-protein interaction (PPI) networks to perform genome-wide analyses of proteins that physically interact with genes responsible for disease phenotypes. A key feature of this tool is its real-time large-scale data processing capability, enabled by its efficient architecture and cloud-based framework. Additionally, the tool incorporates an integrated large language model (LLM) to assist scientists in exploring biological insights from the generated network and multi-omics data. The LLM enhances the interpretation and exploration of complex biological relationships, offering a more interactive and intuitive analysis experience. This integration of multi-omics data, PPI networks, and AI-driven exploration provides a powerful framework for accelerating the discovery of novel drug targets and biomarkers.
+
+## Citation
+
+TBEP is published at [Zenodo](https://doi.org/10.5281/zenodo.16742136) as [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16742136.svg)](https://doi.org/10.5281/zenodo.16742136)
+
+To cite:
+
+> Bhupesh Dewangan. (2025). Target and Biomarker Exploration Portal for Drug Discovery. Zenodo. https://doi.org/10.5281/zenodo.16742136
+
+## Changelog
+
+A complete changelog can be found on [website](https://tbep.missouri.edu/docs/CHANGELOG) or on [github](https://github.com/mizzoudbl/tbep-frontend/blob/main/pages/docs/CHANGELOG.mdx).
 
 ## Server Configuration
 
@@ -193,10 +209,19 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 
         ```bash
         docker exec -it clickhouse bash -c '
-          for f in /backup/clickhouse/*.tsv; do
-            t=$(basename "$f" .tsv)
-            clickhouse-client --query="INSERT INTO $t FORMAT TabSeparated" < "$f"
-            echo "Loaded $t from $f"
+          set -e
+          for f in /backup/clickhouse/*.tsv /backup/clickhouse/*.tsv.gz; do
+            table_name=$(sed -E "s/\.tsv(\.gz)?$//" <<< "$(basename $f)")
+            if [[ $table_name == "*" ]]; then
+              continue
+            fi
+            clickhouse-client --query="TRUNCATE TABLE $table_name"
+            if [[ $f == *.gz ]]; then
+              gunzip -c "$f" | clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames"
+            else
+              clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames" < "$f"
+            fi
+            echo "Loaded $table_name from $f"
           done
         '
         ```
