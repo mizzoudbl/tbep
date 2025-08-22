@@ -48,6 +48,7 @@ services:
     depends_on:
       - neo4j
       - redis
+      - clickhouse
     env_file:
       - backend/.env
   
