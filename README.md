@@ -16,7 +16,7 @@ We present a novel web-based bio-informatics tool designed to facilitate the ide
 
 ## Changelog
 
-A complete changelog can be found on [website](https://pdnet.saipuram.com/docs/CHANGELOG) or on [github](https://github.com/mizzoudbl/tbep-frontend/blob/saipuram/pages/docs/CHANGELOG.mdx).
+A complete changelog can be found on [website](https://pdnet.saipuram.com/docs/CHANGELOG) or on [github](https://github.com/mizzoudbl/tbep-frontend/blob/saipuram/content/CHANGELOG.mdx).
 
 ## Server Configuration
 
