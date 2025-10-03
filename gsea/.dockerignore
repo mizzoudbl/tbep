@@ -1,5 +1,5 @@
 # Name your virtual environment accordingly
-venv/
+.venv/
 __pycache__/
 # Ignore Python bytecode files
 *.pyc

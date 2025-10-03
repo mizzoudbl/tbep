@@ -1,6 +1,8 @@
 [project]
 name = "gsea"
 version = "0.1.0"
+description = "FastAPI project"
+readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi==0.115.2",
