@@ -58,8 +58,10 @@ done
 
 echo "Downloading Association by DataSource Score completed."
 
-cd ..
+cd util/
 python3 ot-association-preprocessing.py
 
-node gene-opentargets-disease-association-seed.js -f data/ot_overall_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
-node gene-opentargets-disease-association-seed.js -f data/ot_datasource_association_score.csv -U bolt://localhost:7687 -u neo4j -d tbep
+cd ../..
+
+python3 cli.py universal seed --file data/ot_overall_association_score.csv --mapping-file data/hgnc_master_gene_list_with_uniprot.csv --format sparse --table overall_association_score
+python3 cli.py universal seed --file data/ot_datasource_association_score.csv --mapping-file data/hgnc_master_gene_list_with_uniprot.csv --format sparse --table datasource_association_score

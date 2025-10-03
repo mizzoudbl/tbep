@@ -2,16 +2,23 @@
 
 # Important Instructions
 
-- Before running any script, make sure to have the necessary dependencies installed by running `npm install` or `node install`(used node here for building the scripts) in this directory.
-
-- For using python scripts, make sure to install necessary dependencies using `pip install -r requirements.txt` ([requirements.txt](./requirements.txt)). Here, is the list of dependencies:
+- Install Python dependencies with uv command `uv sync`
+  before running the CLI. Required packages include:
 
   - `pandas`
-  - `fastparquet`
+  - `clickhouse-connect`
+  - `neo4j`
+  - `click`
+  - `inquirer`
+  - `rich`
 
-- For [gene-universal-seed](./gene-universal-seed.js) to work, you need to have the csv file inside this scripts directory as this is linked to docker volume of the neo4j database.
+  If you don't have `uv` command, install by just using pip using following command:
 
-- Scripts can either be run using `node <script-name>` or `npm run <script-name>` which have CLI behavior and interactive prompts behavior respectively. Use `node <filename> -h` to see the help message.
+  ```bash
+  pip install pandas clickhouse-connect neo4j click inquirer rich
+  ```
+
+- Run workflow commands via the Python CLI: `python cli.py <group> <command>` (for example `python cli.py universal seed --help`). Use `python cli.py --help` to list top-level groups and options.
 
 - These scripts are primarily designed to be run in a local/server environment and not in a remote environment, i.e. data can't be ingested from a remote location. Though it can be deleted from a remote location.
 
@@ -80,8 +87,8 @@ ENSG00000135823,ENSG00000135825,0.6
     - `Pathway_<PropertyName>`: Pathway
     - `Druggability_<PropertyName>`: Druggability
     - `OT_Prioritization_<PropertyName>`: OpenTargets Target Prioritization Factors
-    - `DEG_<PropertyName>`: Differential Expression Gene
-    - `OpenTargets_<PropertyName>`: OpenTargets Target Disease Association
+    - `<DiseaseId>_DEG_<PropertyName>`: Differential Expression Gene
+    - `<DiseaseId>_OpenTargets_<PropertyName>`: OpenTargets Target Disease Association
 
 - These set of universal data present in a file can be a mix of disease dependent and disease independent data. But, it shouldn't hold data from many diseases. If it contains disease dependent data, you need to specify the disease ID using `-D` or `--disease` flag. The disease ID should be in the format of MONDO ID or any other type of ID but should not be its name. Disease Mapping of ID to its name can be uploaded separately using the `disease-mapping-seed` script.
 - The CSV file should not have any empty rows or columns.
@@ -89,6 +96,7 @@ ENSG00000135823,ENSG00000135825,0.6
 
 **Sample Universal Data file:**
 
+```csv
 ID,TE_prop1,Pathway_prop2,Druggability_prop3,OT_Prioritization_prop4,DEG_prop5,OpenTargets_prop6
 ENSG00000135823,0.5,0.2,0.1,0.3,0.4,0.6
 ENSG00000135824,0.6,0.3,0.2,0.4,0.5,0.7
@@ -105,6 +113,7 @@ RGS8,0.6,0.3,0.2,0.4,0.5,0.7
 This is made purposefully to keep OpenTargets Target Disease Association data as keeping it in matrix form is very sparse, so here each row is a property of the gene and the value is the property value.
 
 - The universal data should be in the form of a CSV file. We expect headers in the CSV file in the following order:
+
   - `Gene`: EnsemblID of the gene.
   - `Property`: The property of the gene in the format `<DiseaseID>_OpenTargets_<PropertyName>`.
   - `Value`: The value of the property.
@@ -115,92 +124,64 @@ This is made purposefully to keep OpenTargets Target Disease Association data as
 **Sample OpenTargets Disease Association file:**
 
 ```csv
+gene_id,property_name,value
 ENSG00000001084,DOID_0050890_OpenTargets_Overall_Association Score,0.0317992666634962
 ENSG00000004142,DOID_0050890_OpenTargets_Overall_Association Score,0.0022174791281082
 ```
 
 ```
+gene_id,property_name,value
 ENSG00000254709,EFO_0000095_OpenTargets_Gene Burden,0.7308036119330903
 ENSG00000100342,DOID_10113_OpenTargets_GEL PanelApp,0.607930797611621
 ```
 
-# FAQ & Acronyms
-
-- _gus:_ Gene Universal Seeding
-- _gss:_ Gene Score Seeding
-- _gud:_ Gene Universal Deletion
-- _rgu:_ Reference Genome Update
-- _dms:_ Disease Mapping Seeding
-- _gottdas:_ Gene OpenTargets Target Disease Association Seeding
-- _ot-tpf:_ OpenTargets Target Prioritization Factors
-- _ot-tda:_ OpenTargets Target Disease Association
-- _rgv:_ Reference Genome Verification
-- _pdu:_ Property Description Update
-
 # Database Ingestion Order
 
-Here, is a script which describes the order in which database should be prepared and ingested. This is important as some scripts depend on the data from other scripts. The order is as follows:
-
-1. `rgu` - Reference Genome Update
-2. `gss` - Gene Score Seeding
-3. `gus` - Gene Universal Seeding
-4. `gottdas` - Gene OpenTargets Target Disease Association Seeding
-5. `dms` - Disease Mapping Seeding
-6. `pdu` - Property Description Update
+Here, is a script which describes the order in which database should be prepared and ingested. This is important as some scripts depend on the data from other scripts.
 
 ```bash
-# Absolute path to the working directory (adjust as needed)
 WORKDIR="/path/to/this/directory"  # <-- Change this
-# Neo4j password (change this to your actual password)
-PASSWORD="your_password"  # <-- Change this
-# Log file
+CLICKHOUSE_PASSWORD="your_password"  # <-- Change this
+NEO4J_PASSWORD="your_password"  # <-- Change this
 LOGFILE="$WORKDIR/data_pipeline_$(date +%F_%T).log"
 
-# Commands
-DEFAULT_ARGS="-U bolt://localhost:7687 -u neo4j -p $PASSWORD -d tbep"
+CLICKHOUSE_ARGS="--ch localhost --cp 8123 --cd default --cu default --cP $CLICKHOUSE_PASSWORD"
+NEO4J_ARGS="-nU bolt://localhost:7687 -nu neo4j -nP $NEO4J_PASSWORD -nd tbep"
 
 cd "$WORKDIR"
 echo "Running pipeline from: $WORKDIR" | tee -a "$LOGFILE"
 
 {
-  node gene-reference-update.js -f data/hgnc_master_gene_list_with_uniprot.csv $DEFAULT_ARGS
-  node gene-score-seed.js -f data/ppi_db_string.csv -i PPI -t ENSEMBL-ID $DEFAULT_ARGS
-  node gene-score-seed.js -f data/funppi_db_string.csv -i FUN_PPI -t ENSEMBL-ID $DEFAULT_ARGS
-  node gene-score-seed.js -f data/biogrid_score.csv -i BIO_GRID -t HGNC-Symbol $DEFAULT_ARGS
-  node gene-score-seed.js -f data/intact_score.csv -i INT_ACT -t HGNC-Symbol $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/TDP_Pathway_KEGG_binary_corrected_modified_kept_rows.csv --nh --di $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/TDP_Pathway_reactome_binary_corrected_modified_kept_rows.csv --nh --di $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/TE_consensus_bulkrna_kept_rows.csv --nh --di $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/TE_HPA_scrna_kept_rows.csv --nh --di $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/Druggability.csv --nh --di $DEFAULT_ARGS
-  node gene-universal-seed.js -f data/ot_25.03_target_prioritization_score.csv --nh --di $DEFAULT_ARGS
-  node gene-opentargets-disease-association-seed.js -f data/ot_25.03_datasource_association_score.csv $DEFAULT_ARGS
-  node gene-opentargets-disease-association-seed.js -f data/ot_25.03_overall_association_score.csv $DEFAULT_ARGS
-  
-  ## Some LogFC data (as per availability)
-  node gene-universal-seed.js -f data/ALS_logFC_from_bill_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0004976
-  node gene-universal-seed.js -f data/Mayo_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0019037
-  node gene-universal-seed.js -f data/MSBB_diagnosis_gender_logFC_transformed_PSP_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0019037
-  node gene-universal-seed.js -f data/MSBB_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0019037
-  node gene-universal-seed.js -f data/ROSMAP_diagnosis_gender_agedeath_logFC_transformed_PSP_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0019037
-  node gene-universal-seed.js -f data/ROSMAP_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv --nh $DEFAULT_ARGS -D MONDO_0019037
-  ########################################
-  node disease-mapping-seed.js -f data/ot_25.03_disease_mapping.csv $DEFAULT_ARGS
-  node property-description-update.js -f data/property_description_tbep.csv $DEFAULT_ARGS
+  python cli.py network update-reference-genome -f data/hgnc_master_gene_list_with_uniprot.csv $NEO4J_ARGS
+  python cli.py network seed -f data/ppi_db_string.csv -itp FUN_PPI -it ENSEMBL-ID $NEO4J_ARGS
+  python cli.py network seed -f data/funppi_db_string.csv -itp PPI -it ENSEMBL-ID $NEO4J_ARGS
+  python cli.py network seed -f data/biogrid_score.csv -itp BIO_GRID -it HGNC-Symbol $NEO4J_ARGS
+  python cli.py network seed -f data/intact_score.csv -itp INT_ACT -it HGNC-Symbol $NEO4J_ARGS
+  python cli.py universal seed -f data/TDP_Pathway_KEGG_binary_corrected_modified_kept_rows.csv -fmt dense $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py universal seed -f data/TDP_Pathway_reactome_binary_corrected_modified_kept_rows.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py universal seed -f data/TE_consensus_bulkrna_kept_rows.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py universal seed -f data/TE_HPA_scrna_kept_rows.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py universal seed -f data/Druggability.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py universal seed -f data/ot_25.03_target_prioritization_score.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py opentargets seed -f data/ot_25.03_datasource_association_score.csv -fmt sparse -t datasource_association_score $CLICKHOUSE_ARGS $NEO4J_ARGS
+  python cli.py opentargets seed -f data/ot_25.03_overall_association_score.csv -fmt sparse -t overall_association_score $CLICKHOUSE_ARGS $NEO4J_ARGS
 
-  echo "✅ Pipeline completed successfully."
+  sed -i '1s/logFC_\./MONDO_0004976_DEG_\./g' data/ALS_logFC_from_bill_modified_kept_genes.csv
+  python cli.py universal seed -f data/ALS_logFC_from_bill_modified_kept_genes.csv $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/Mayo_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/Mayo_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/MSBB_diagnosis_gender_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/MSBB_diagnosis_gender_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/MSBB_diagnosis_gender_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/MSBB_diagnosis_gender_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/MSBB_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/MSBB_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/ROSMAP_diagnosis_gender_agedeath_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/ROSMAP_diagnosis_gender_agedeath_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+  sed -i '1s/logFC_\./MONDO_0019037_DEG_\./g' data/ROSMAP_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv
+  python cli.py universal seed -f data/ROSMAP_diagnosis_logFC_transformed_PSP_modified_kept_genes.csv -d MONDO_0019037 $CLICKHOUSE_ARGS $NEO4J_ARGS
+
+  python cli.py network update-disease-metadata -f data/ot_25.03_disease_mapping.csv $NEO4J_ARGS
+  python cli.py network update-property-metadata -f data/property_description_tbep.csv $NEO4J_ARGS
 } 2>&1 | tee -a "$LOGFILE"
 ```
-
-
-# ClickHouse Data Ingestion
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Ingest overall association scores into ClickHouse
-python clickhouse-overall-association-seed.py data/ot_25.03_overall_association_score.csv data/hgnc_master_gene_list_with_uniprot.csv
-```
-
-> See the script [`clickhouse-overall-association-seed.py`](./clickhouse-overall-association-seed.py) for details and customization.
