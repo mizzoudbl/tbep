@@ -700,7 +700,7 @@ def network_seed(
         separator = (
             "\t" if file.endswith((".tsv", ".tsv.gz", ".tsv.xz", ".tsv.bz2 ")) else ","
         )
-        df = pd.read_csv(file, sep=separator,header=None)
+        df = pd.read_csv(file, sep=separator, header=None)
 
         if not id_type:
             # We'll infer ID type based on row content if rows look like ENSG IDs
@@ -711,7 +711,9 @@ def network_seed(
                 id_type = "HGNC-Symbol"
             console.print(f"[blue]Inferred ID type as: {id_type}[/blue]")
         elif id_type not in ID_TYPE:
-            console.print(f"[red]Error: ID type must be one of {', '.join(ID_TYPE)}[/red]")
+            console.print(
+                f"[red]Error: ID type must be one of {', '.join(ID_TYPE)}[/red]"
+            )
             sys.exit(0)
 
         console.print(
@@ -731,13 +733,12 @@ def network_seed(
 
     query = f"""
     LOAD CSV FROM 'file:///interaction_file_temp.csv' AS line
-		CALL {{
-			WITH line
-            MATCH (g1:Gene {{ {"ID" if id_type == "ENSEMBL-ID" else "Gene_name"}: toUpper(line[0]) }})
-            MATCH (g2:Gene {{ {"ID" if id_type == "ENSEMBL-ID" else "Gene_name"}: toUpper(line[1]) }})
-			MERGE (g1)-[r:$interactionType]->(g2)
-			ON CREATE SET r.score = toFloat(line[2])
-        }} IN TRANSACTIONS;
+    CALL (line) {{
+        MATCH (g1:Gene {{ {"ID" if id_type == "ENSEMBL-ID" else "Gene_name"}: toUpper(line[0]) }})
+        MATCH (g2:Gene {{ {"ID" if id_type == "ENSEMBL-ID" else "Gene_name"}: toUpper(line[1]) }})
+        MERGE (g1)-[r:$interactionType]->(g2)
+        ON CREATE SET r.score = toFloat(line[2])
+    }} IN TRANSACTIONS;
     """
 
     result = seeder.driver.execute_query(
@@ -755,6 +756,7 @@ def network_seed(
     from os import remove
 
     remove("interaction_file_temp.csv")
+
 
 @network.command()
 @click.option(
@@ -818,14 +820,13 @@ def update_reference_genome(
     result = neo4j_seeder.driver.execute_query(
         f"""
         LOAD CSV WITH HEADERS FROM 'file:///data/reference_genome_temp.csv' AS row
-        CALL {{
-            WITH row
+        CALL (row) {{
             WITH row, [alias IN split(row.`Alias symbols` + "," + row.`Previous symbols`, ",") | toUpper(trim(alias))] AS aliases
             WHERE row.`Ensembl gene ID` IS NOT NULL OR row.`Ensembl ID(supplied by Ensembl)` IS NOT NULL
-            {'UNWIND [symbol IN split(row.`Previous symbols`, ",") | toUpper(trim(symbol))] AS prev_symbol' if not new_db else ''}
-            MERGE (g:Gene {{ {'ID: COALESCE(row.`Ensembl ID(supplied by Ensembl)`, row.`Ensembl gene ID`)' if new_db else '`Gene_name`: prev_symbol'} }})
+            {'UNWIND [symbol IN split(row.`Previous symbols`, ",") | toUpper(trim(symbol))] AS prev_symbol' if not new_db else ""}
+            MERGE (g:Gene {{ {"ID: COALESCE(row.`Ensembl ID(supplied by Ensembl)`, row.`Ensembl gene ID`)" if new_db else "`Gene_name`: prev_symbol"} }})
             SET g += {{
-                {'`ID`: COALESCE(row.`Ensembl ID(supplied by Ensembl)`, row.`Ensembl gene ID`),' if not new_db else ''}
+                {"`ID`: COALESCE(row.`Ensembl ID(supplied by Ensembl)`, row.`Ensembl gene ID`)," if not new_db else ""}
                 `Gene_name`: toUpper(row.`Approved symbol`),
                 `Description`: row.`Approved name`,
                 `hgnc_gene_id`: row.`HGNC ID`,
@@ -852,6 +853,7 @@ def update_reference_genome(
     from os import remove
 
     remove("data/reference_genome_temp.csv")
+
 
 @network.command()
 @click.option(
@@ -903,8 +905,7 @@ def update_disease_metadata(
         )
         session.run("""
             LOAD CSV FROM 'file:///data/disease_metadata_temp.csv' AS row
-            CALL {
-                WITH row
+            CALL (row) {
                 MATCH (d:Disease {ID: row[0]})
                 SET d.name = row[1]
             } IN TRANSACTIONS;
@@ -916,8 +917,6 @@ def update_disease_metadata(
     from os import remove
 
     remove("data/disease_metadata_temp.csv")
-
-
 
 
 @network.command()
@@ -975,8 +974,7 @@ def update_property_metadata(
     result = neo4j_seeder.driver.execute_query(
         """
         LOAD CSV FROM 'file:///data/property_metadata_temp.csv' AS line
-        CALL {
-            WITH line
+        CALL (line) {
             MATCH (p:Property { name: line[0]})
             SET p.description = line[1]
         } IN TRANSACTIONS;
@@ -1550,7 +1548,7 @@ def neo4j(neo4j_uri, neo4j_database, neo4j_username, neo4j_password):
 @click.option(
     "--gene-symbol-header",
     default="Approved symbol",
-    help="Gene Symbol column name in the reference genome"
+    help="Gene Symbol column name in the reference genome",
 )
 @click.option(
     "--file-type",
@@ -1627,11 +1625,14 @@ def verify(
         else:
             if not str(input_df.iloc[0, 0]).startswith("ENSG"):
                 if gene_symbol_header not in ref_df.columns:
-                    print(f"[red]Reference genome must contain '{gene_symbol_header}' column for network file verification[/red]")
+                    print(
+                        f"[red]Reference genome must contain '{gene_symbol_header}' column for network file verification[/red]"
+                    )
                     sys.exit(1)
-                gene_set = set(ref_df[gene_symbol_header].dropna().astype(str).str.strip().unique())
+                gene_set = set(
+                    ref_df[gene_symbol_header].dropna().astype(str).str.strip().unique()
+                )
                 gene_set.discard("")
-                
 
             # For network files, filter based on first two columns
             if len(input_df.columns) < 2:
@@ -1657,9 +1658,7 @@ def verify(
         sys.exit(1)
 
     print("[green][bold]✓[/bold] CSV verified successfully.[/green]")
-    print(
-        f"[green][bold]✓[/bold] Total filtered rows: {len(filtered_df)}[/green]"
-    )
+    print(f"[green][bold]✓[/bold] Total filtered rows: {len(filtered_df)}[/green]")
     print(f"[green][bold]✓[/bold] Output file: {output_file}[/green]")
 
 
