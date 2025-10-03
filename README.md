@@ -206,36 +206,70 @@ A complete changelog can be found on [website](https://tbep.missouri.edu/docs/CH
    - Ensure your `.tsv` files are placed in the [`scripts/data/backup/clickhouse`](./scripts/data/backup/clickhouse/) directory.
    - Ensure all services (including ClickHouse) are already running, as tables are created automatically by the application.
    - Load all tables from the backup:
+      1. If tables are in TSV format:
+         ```bash
+         docker exec -it clickhouse bash -c '
+            set -e
+            for f in /backup/clickhouse/*.tsv /backup/clickhouse/*.tsv.gz; do
+               table_name=$(sed -E "s/\.tsv(\.gz)?$//" <<< "$(basename $f)")
+               if [[ $table_name == "*" ]]; then
+               continue
+               fi
+               clickhouse-client --query="TRUNCATE TABLE $table_name"
+               if [[ $f == *.gz ]]; then
+               gunzip -c "$f" | clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames"
+               else
+               clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames" < "$f"
+               fi
+               echo "Loaded $table_name from $f"
+            done
+         '
+         ```
 
-     ```bash
-     docker exec -it clickhouse bash -c '
-       set -e
-       for f in /backup/clickhouse/*.tsv /backup/clickhouse/*.tsv.gz; do
-         table_name=$(sed -E "s/\.tsv(\.gz)?$//" <<< "$(basename $f)")
-         if [[ $table_name == "*" ]]; then
-           continue
-         fi
-         clickhouse-client --query="TRUNCATE TABLE $table_name"
-         if [[ $f == *.gz ]]; then
-           gunzip -c "$f" | clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames"
-         else
-           clickhouse-client --query="INSERT INTO $table_name FORMAT TabSeparatedWithNames" < "$f"
-         fi
-         echo "Loaded $table_name from $f"
-       done
-     '
-     ```
+      2. If tables are in Native format:
+         ```bash
+         docker exec -it clickhouse bash -c '
+            set -e
+            for f in /backup/clickhouse/*.native; do
+               table_name=$(sed -E "s/\.native$//" <<< "$(basename $f)")
+               clickhouse-client --query="TRUNCATE TABLE $table_name"
+               clickhouse-client --query="INSERT INTO $table_name FORMAT Native" < "$f"
+               echo "Loaded $table_name from $f"
+            done
+         '
+         ```
+
+   > 💡 **NOTE**
+   > If Materialized Views table is not created, you can create it manually using the following command:
+   > ```bash
+   > docker exec -it clickhouse clickhouse-client --query "DROP TABLE IF EXISTS mv_datasource_association_score_overall_association_score;"
+   >
+   > docker exec -it clickhouse clickhouse-client --query "CREATE MATERIALIZED VIEW IF NOT EXISTS mv_datasource_association_score_overall_association_score
+   > ENGINE = MergeTree()
+   > ORDER BY (disease_id, gene_id)
+   > POPULATE
+   > AS
+   > SELECT
+   >   das.gene_id,
+   >   das.gene_name,
+   >   das.disease_id,
+   >   das.datasource_id,
+   >   das.score AS datasource_score,
+   >   oas.score AS overall_score
+   > FROM datasource_association_score das
+   > JOIN overall_association_score oas
+   >   ON das.gene_id = oas.gene_id AND das.disease_id = oas.disease_id;"
+   > ```
 
    > 💡 **NOTE**  
-   > The application will auto-create tables on startup. Ensure the `.tsv` files match the expected schema.
+   > The application will auto-create tables on startup. Ensure the `.tsv` or `.native` files match the expected schema.
    > For more details on importing/exporting ClickHouse data, see the [ClickHouse Data Export/Import](#clickhouse-data-exportimport) section below.
 
    > 💡 **NOTE**
    > If you are a developer, you can run use [docker-compose.dev.yml](../docker-compose.dev.yml) file to run the services in development mode. This will allow you to make changes in the code and see the changes reflected in the browser without restarting the services.
-
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
-   ```
+   > ```bash
+   > docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+   > ```
 
 For more information of backend and frontend, refer to the respective README files in the [backend](https://github.com/mizzoudbl/tbep-backend/blob/main/README.md) and [frontend](https://github.com/mizzoudbl/tbep-frontend/blob/main/README.md) directories.
 
@@ -300,9 +334,43 @@ To export all ClickHouse tables as `.tsv` files (one file per table):
 
 ---
 
+To export tables in `.native` format instead of `.tsv`, use this command instead:
+
+```bash
+docker exec -it clickhouse bash -c '
+  mkdir -p /backup/clickhouse
+  for t in $(clickhouse-client --query="SHOW TABLES" --format=TabSeparated); do
+    clickhouse-client --query="SELECT * FROM $t FORMAT Native" > /backup/clickhouse/${t}.native
+    echo "Exported $t to /backup/clickhouse/${t}.native"
+  done
+'
+```
+
 ### Importing ClickHouse Data
 
 If you have received `.tsv` files for ClickHouse tables (one file per table), follow these steps to load all data into your ClickHouse instance:
+
+```bash
+docker exec -it clickhouse bash -c '
+  for f in /backup/clickhouse/*.tsv; do
+    t=$(basename "$f" .tsv)
+    clickhouse-client --query="INSERT INTO $t FORMAT TabSeparated" < "$f"
+    echo "Loaded $t from $f"
+  done
+'
+```
+
+If you have received `.native` files for ClickHouse tables (one file per table), follow these steps to load all data into your ClickHouse instance:
+
+```bash
+docker exec -it clickhouse bash -c '
+  for f in /backup/clickhouse/*.native; do
+    t=$(basename "$f" .native)
+    clickhouse-client --query="INSERT INTO $t FORMAT Native" < "$f"
+    echo "Loaded $t from $f"
+  done
+'
+```
 
 1. **Transfer the `.tsv` files to the server**  
    (Run on your local machine)
@@ -344,6 +412,17 @@ If you have received `.tsv` files for ClickHouse tables (one file per table), fo
      for f in /backup/clickhouse/*.tsv; do
        t=$(basename "$f" .tsv)
        clickhouse-client --query="INSERT INTO $t FORMAT TabSeparated" < "$f"
+       echo "Loaded $t from $f"
+     done
+   '
+   ```
+
+   If your files are in `.native` format instead of `.tsv`, use this command instead:
+   ```bash
+   docker exec -it clickhouse bash -c '
+     for f in /backup/clickhouse/*.native; do
+       t=$(basename "$f" .native)
+       clickhouse-client --query="INSERT INTO $t FORMAT Native" < "$f"
        echo "Loaded $t from $f"
      done
    '

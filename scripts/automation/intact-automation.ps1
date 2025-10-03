@@ -6,6 +6,8 @@ Remove-Item -Path human_*.txt
 Move-Item -Path human.txt -DestinationPath ../data/
 
 # Run the script
-python ../intact-preprocessing.py
+Set-Location util
+python intact-preprocessing.py
 # Seeding script
-node ../gene-score-seed.js -f ../data/intact_score.csv -U 'bolt://localhost:7687' -u neo4j -d tbep -i INT_ACT -t 'HGNC-Symbol'
+Set-Location ../..
+python cli.py network seed -f data/intact_score.csv -itp INT_ACT -it HGNC-Symbol  -nU bolt://localhost:7687 -nu neo4j -nd tbep

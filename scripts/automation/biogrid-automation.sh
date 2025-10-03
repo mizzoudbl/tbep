@@ -11,6 +11,8 @@ rm BIOGRID-ORGANISM-*.{txt,zip}
 
 # Run the script
 echo "Running script..."
-python3 ../biogrid-preprocessing.py
+cd util/
+python3 biogrid-preprocessing.py
 # Seeding script
-node ../gene-score-seed.js -f ../data/biogrid_score.csv -U bolt://localhost:7687 -u neo4j -d tbep -i BIOGRID -t 'HGNC-Symbol'
+cd ../..
+python3 cli.py network seed -f data/biogrid_score.csv -itp BIO_GRID -it HGNC-Symbol -nU bolt://localhost:7687 -nu neo4j -nd tbep

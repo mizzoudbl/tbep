@@ -1,4 +1,0 @@
-fastapi==0.115.2
-pandas==2.2.3
-uvicorn==0.32.0
-gseapy==1.1.9

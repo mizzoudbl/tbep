@@ -4,8 +4,10 @@
 .idea
 node_modules/
 scripts/**/*.csv
+scripts/**/*.gz
 scripts/**/*.tsv
 scripts/**/*.parquet
+scripts/**/*.native
 scripts/cypher/*.cypher
 *.dump
 __pycache__/

@@ -8,6 +8,8 @@ mv human.txt ../data/
 
 # Run the script
 echo "Running scripts..."
-python3 ../intact-preprocessing.py
+cd util/
+python3 intact-preprocessing.py
 # Seeding script
-node ../gene-score-seed.js -f ../data/intact_score.csv -U bolt://localhost:7687 -u neo4j -d tbep -i INT_ACT -t 'HGNC-Symbol'
+cd ../..
+python3 cli.py network seed -f data/intact_score.csv -itp INT_ACT -it HGNC-Symbol -nU bolt://localhost:7687 -nu neo4j -nd tbep
